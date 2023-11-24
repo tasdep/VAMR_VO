@@ -24,6 +24,8 @@ To get a local copy up and running follow these simple example steps.
 
 ### Development Guidelines
 - Do work in your own branch, with the prefix of your github id followed by feature name. Ex: `git checkout -b 'kappibw/project-skeleton'`
+- Add someone else as reviewer on a PR before merging to master.
+- Document your work in the draft report as you go, use it as a scratchbook.
 
 
 <!-- USAGE EXAMPLES -->
