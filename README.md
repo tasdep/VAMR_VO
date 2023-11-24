@@ -5,6 +5,7 @@ Our VAMR VO pipeline project :)
 ## Links
 - [Subject website](https://rpg.ifi.uzh.ch/teaching.html)
 - [Project FAQ website](https://docs.google.com/document/d/1IuWmXyO1m5DV77AhEa-MpK-yp9LDMQO5IM6oyVLvHa0/edit#heading=h.w8vo6xo5cuee)
+- [Overleaf draft report](https://www.overleaf.com/1966191675jhdpcgnggbfs#a129d1)
 
 ## Datasets
 The shared data folder contains the small/easy dataset. The other larger datasets should be stored locally in a top level folder `local_data/`. This is in the `.gitignore`.
@@ -14,12 +15,15 @@ This is an example of how you may give instructions on setting up your project l
 To get a local copy up and running follow these simple example steps.
 
 ### Prerequisites
-TODO: create env (in conda?) and add requirements file
+1) Install [conda] (https://www.anaconda.com/download)
+2) Clone this repo
 
 ### Installation
-...
+1) Navigate to the project directory and run `conda env create -f environment.yml`
+2) Run `conda activate vamr_vo`
 
-
+### Development Guidelines
+- Do work in your own branch, with the prefix of your github id followed by feature name. Ex: `git checkout -b 'kappibw/project-skeleton'`
 
 
 <!-- USAGE EXAMPLES -->
