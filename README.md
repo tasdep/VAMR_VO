@@ -7,6 +7,12 @@ Our VAMR VO pipeline project :)
 - [Project FAQ website](https://docs.google.com/document/d/1IuWmXyO1m5DV77AhEa-MpK-yp9LDMQO5IM6oyVLvHa0/edit#heading=h.w8vo6xo5cuee)
 - [Overleaf draft report](https://www.overleaf.com/1966191675jhdpcgnggbfs#a129d1)
 
+## Work Division
+### Initialization - Tas
+### 4.1 Associaiting Keypoints to Exisitng Landmarks - Kappi
+### 4.2 Estimating Current Pose - Adam
+### 4.3 Triangulating New Landmarks - Heba
+
 ## Datasets
 The shared data folder contains the small/easy dataset. The other larger datasets should be stored locally in a top level folder `local_data/`. This is in the `.gitignore`.
 
