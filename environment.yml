@@ -6,4 +6,3 @@ dependencies:
   - numpy
   - opencv
   - matplotlib
-prefix: /Users/kappi/miniconda3/envs/vamr_vo
