@@ -61,8 +61,10 @@ def track_and_update(
             status,
         )
 
-    # TODO: Use RANSAC to estimate the transformation between prev_image and
+    # Use RANSAC to estimate the transformation between prev_image and
     # new_image, and find one with the least outliers.
+    # TODO: Check this is the intended way they want us to use RANSAC and that we are
+    # allowed to use this opencv function.
     _, inlier_mask = cv2.findFundamentalMat(tracked_prev, tracked_new, cv2.FM_RANSAC)
     inlier_new = tracked_new.reshape(-1, 1, 2)[inlier_mask == 1]
     inlier_prev = tracked_prev.reshape(-1, 1, 2)[inlier_mask == 1]
