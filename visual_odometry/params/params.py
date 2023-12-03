@@ -14,6 +14,10 @@ KEYPOINT_THRESHOLD = 0.01
 
 DESC_PATCH_RAD = 3
 
+RANSAC_REPROJ_THRESH = 0.5
+RANSAC_CONFIDENCE = 0.999
+
+
 ################################################################
 # Params for 4.1 - Associating keypoints to exisitng landmarks #
 ################################################################

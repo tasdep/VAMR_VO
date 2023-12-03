@@ -35,9 +35,11 @@ if __name__ == "__main__":
 
     # Read images into a numpy array
     images: np.ndarray = read_images_into_array(images_directory)
-
+    K: np.ndarray = np.genfromtxt("..\shared_data\parking\K.txt", delimiter=',', dtype=float)  # calibration matrix[3x3]
+    print(f"{K=}")
+    
     # Print the shape of the resulting numpy array
     print("Shape of the numpy array:", images.shape)
     # 
     # cv2.imshow("temp", images[0,...])
-    initial_state: State = initialize_pipeline(images)
+    initial_state: State = initialize_pipeline(images, K)
