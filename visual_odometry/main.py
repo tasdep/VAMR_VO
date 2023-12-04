@@ -96,9 +96,11 @@ if __name__ == "__main__":
         images.append(image)
     images: np.ndarray = np.array(images)
 
-    initial_state: State = initialize_pipeline(images, K, visualise=False, print_stats=True)
+    initial_state: State
+    initial_pose: np.ndarray
+    initial_state, initial_pose = initialize_pipeline(images, K, visualise=False, print_stats=True)
 
-    visualize_odometry(images[params.BOOTSRAP_FRAMES[1]], initial_state.P, initial_state.X, np.zeros((4, 4)), np.zeros((4, 4)))
+    visualize_odometry(images[params.BOOTSRAP_FRAMES[1]], initial_state.P, initial_state.X, initial_pose, np.zeros((4, 4)))
     ###############################
     # Continuous Visual Odometry  #
     ###############################

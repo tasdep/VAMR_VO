@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import params.params as params
 from utils.visualisation import drawCamera
 from utils.state import State
+from utils.utils import create_homogeneous_matrix
 
 
 # ASSUMPTION K_1 = K_2
@@ -130,7 +131,7 @@ def initialize_pipeline(input_images: np.ndarray, K: np.ndarray, visualise: bool
     # note: C,F,T are blank as there are no candidates at this point
     state = State()
     state.update_landmarks(X, P)
-    return state
+    return state, create_homogeneous_matrix(R_correct, t_correct)
 
 
 def describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> np.ndarray:
