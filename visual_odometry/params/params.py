@@ -1,7 +1,22 @@
 import cv2
 
+################################################################
+# Params for 3 - Initialization #
+################################################################
 # Which frames from the input to use for bootstrapping initial features.
 BOOTSRAP_FRAMES = [0, 3]
+
+HARRIS_BLOCK_SIZE = 9
+HARRIS_SOBEL_SIZE = 3
+HARRIS_K = 0.1
+
+KEYPOINT_THRESHOLD = 0.01
+
+DESC_PATCH_RAD = 3
+
+RANSAC_REPROJ_THRESH = 0.5
+RANSAC_CONFIDENCE = 0.999
+
 
 ################################################################
 # Params for 4.1 - Associating keypoints to exisitng landmarks #
