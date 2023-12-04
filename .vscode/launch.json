@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "test_initialization",
+            "name": "test_main",
             "type": "python",
             "request": "launch",
-            "module": "bootstrapping.test_intialization",
+            "program": "main.py",
             "justMyCode": true,
             "cwd": "${workspaceFolder}/visual_odometry"
         },

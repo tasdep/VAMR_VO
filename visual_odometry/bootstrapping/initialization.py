@@ -128,7 +128,9 @@ def initialize_pipeline(input_images: np.ndarray, K: np.ndarray, visualise: bool
 
     # initialise the pipeline object with the keypoints and landmarks
     # note: C,F,T are blank as there are no candidates at this point
-    return State().update_landmarks(X, P)
+    state = State()
+    state.update_landmarks(X, P)
+    return state
 
 
 def describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> np.ndarray:

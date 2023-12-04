@@ -5,12 +5,12 @@ import numpy as np
 import os
 import cv2
 
-def read_images_into_array(images_directory: str) -> np.ndarray:
+def read_images_into_array(images_directory: str, n: int) -> np.ndarray:
     # Initialize an empty list to store the grayscale images
     grayscale_images: list[np.ndarray] = []
 
     # Loop through the images in the directory
-    for i in range(10):  # Assuming your images are named from 0 to 9
+    for i in range(n):  # Assuming your images are named from 0 to 9
         # Construct the path to each image
         image_path: str = os.path.join(images_directory, f"img_{i:05d}.png")
 
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
 
     # Read images into a numpy array
-    images: np.ndarray = read_images_into_array(images_directory)
+    images: np.ndarray = read_images_into_array(images_directory, 10)
     K: np.ndarray = np.genfromtxt("..\shared_data\parking\K.txt", delimiter=',', dtype=float)  # calibration matrix[3x3]
     
     # cv2.imshow("temp", images[0,...])
