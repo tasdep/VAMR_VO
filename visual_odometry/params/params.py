@@ -41,7 +41,7 @@ POSE_RANSAC_ITERATION = 2000
 
 # Inlier threshold value used by the RANSAC procedure. 
 # The parameter value is the maximum allowed distance between the observed and computed point projections to consider it an inlier. Default: 8.0
-POSE_RANSAC_REPROJECTION_ERROR = 20.0
+POSE_RANSAC_REPROJECTION_ERROR = 10.0
 
 # The probability that the algorithm produces a useful result. Default: 0.99
 POSE_RANSAC_CONFIDENCE = 0.999

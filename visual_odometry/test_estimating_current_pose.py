@@ -14,7 +14,7 @@ p_W_landmarks = np.loadtxt("visual_odometry/data/p_W_landmarks.txt").T
 prev_image = cv2.imread("visual_odometry/data/000000.png", cv2.IMREAD_GRAYSCALE)
 new_image = cv2.imread("visual_odometry/data/000001.png", cv2.IMREAD_GRAYSCALE)
 # Colour version so we can plot coloured tracking traces.
-vis_image = cv2.imread("visual_odometry/data/000001.png", cv2.IMREAD_COLOR)
+vis_image = cv2.imread("visual_odometry/data/000001.png", cv2.IMREAD_GRAYSCALE)
 K = np.loadtxt("visual_odometry/data/K.txt")
 
 state = state.State()
@@ -22,8 +22,9 @@ state = state.State()
 state.update_landmarks(p_W_landmarks, keypoints)
 
 fig = plt.figure()
+plt.tight_layout()
 
-for i in range(8):
+for i in range(30):
     assoc.track_and_update(state, prev_image, new_image, False, vis_image)
     prev_image = new_image
     idx = "00000" + str(i + 2)
@@ -32,4 +33,4 @@ for i in range(8):
     )
     vis_image = cv2.imread(f"visual_odometry/data//{idx[-6:]}.png", cv2.IMREAD_COLOR)
 
-    R, t = estimating_current_pose(state=state, K=K, PnP_solver='P3P', refine_with_DLT=False, visualization=True, figure=fig)
+    R, t = estimating_current_pose(state=state, K=K, PnP_solver='P3P', refine_with_DLT=False, visualization=True, figure=fig, image=vis_image)

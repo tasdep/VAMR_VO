@@ -14,7 +14,8 @@ def estimating_current_pose(
         PnP_solver: str = 'P3P',
         refine_with_DLT: bool = False,
         visualization: bool = True,
-        figure: Figure = None
+        figure: Figure = None,
+        image: np.ndarray = None
 ):
     """
     Estimates the current camera pose (localization) and inliers using RANSAC. 
@@ -26,6 +27,8 @@ def estimating_current_pose(
         PnP_solver (str): Can be either 'P3P' or 'DLT' to solve the PnP localization problem.
         refine_with_DLT (bool): Refine the rotation and translation with the determined inliers by RANSAC.
         visualization (bool): Can be used the visualize the camera pose.
+        figure (Figure): 3D landmarks and camera pose visualization.
+        image (np.ndarray): For inlier visualization.
 
     Returns:
         R (np.ndarray): 3x3 rotation matrix of the current frame.
@@ -47,13 +50,13 @@ def estimating_current_pose(
     t = np.zeros((3,1)) #dim 3x1
 
     # Get the 2D keypoints from the state
-    keypoints = state._P #dim: 2xN
+    keypoints = state._P.T #dim: 2xN
 
     # Reshape the keypoints from 2xN to Nx1x2 for cv2
     keypoints = np.reshape(keypoints, (-1, 1, 2)) #dim: Nx1x2
 
     # Get the corresponding 3D landmarks from the state
-    landmarks = state._X #dim: 3xN
+    landmarks = state._X.T #dim: 3xN
 
     # Reshape the landmarks from 3xN to Nx1x3 for cv2
     landmarks = np.reshape(landmarks, (-1, 1, 3)) #dim: Nx1x3
@@ -85,21 +88,35 @@ def estimating_current_pose(
         raise ValueError(f"Invalid method. Please choose from: {', '.join(valid_methods)}")
 
     # cv2.SOLVEPNP_P3P or cv2.SOLVEPNP_ITERATIVE 
-    succes, rotation_vector, translation_vector, inliers = cv2.solvePnPRansac(landmarks, keypoints, K, **params_RANSAC, flags=PnP_flag)
+    succes, rotation_vector, translation_vector, inliers_index = cv2.solvePnPRansac(landmarks, keypoints, K, **params_RANSAC, flags=PnP_flag)
 
     # Print the number of inliers found:
     if succes == True:
         # If the RANSAC was successful append the inliers.
         number_of_points = landmarks.shape[0]
-        number_of_inliers = len(inliers)
+        number_of_inliers = len(inliers_index)
 
         # Find the inliers in the keypoints and the landmarks
         inlier_landmarks = np.zeros((number_of_inliers, landmarks.shape[1], landmarks.shape[2])) #dim: num_of_inliers x1x3
         inlier_keypoints = np.zeros((number_of_inliers, keypoints.shape[1], keypoints.shape[2])) #dim: num_of_inliers x1x2
 
-        for num_inlier, inlier_index in zip(range(number_of_inliers), inliers):
-            inlier_landmarks[num_inlier, :, :] = landmarks[inlier_index, :, :]
-            inlier_keypoints[num_inlier, :, :] = keypoints[inlier_index, :, :]
+        # Get out the inliers:
+        for num_inlier, inliers in zip(range(number_of_inliers), inliers_index):
+            inlier_landmarks[num_inlier, :, :] = landmarks[inliers, :, :]
+            inlier_keypoints[num_inlier, :, :] = keypoints[inliers, :, :]
+
+        # Create all of the indicies:
+        full_indicies = np.arange(number_of_points).reshape(-1, 1)
+
+        # Create the outlier indicies:
+        outliers_index = np.setdiff1d(full_indicies, inliers_index).reshape(-1, 1)
+        number_of_outliers = len(outliers_index)
+
+        # Get the outliers:
+        outlier_keypoints = np.zeros((number_of_outliers, keypoints.shape[1], keypoints.shape[2])) #dim: (number_of_points-num_of_inliers) x1x2
+
+        for num_outlier, outliers in zip(range(number_of_outliers), outliers_index):
+            outlier_keypoints[num_outlier, :, :] = keypoints[outliers, :, :]
 
         print('The RANSAC algorithm was succesful. Number of inliers found: ' + str(number_of_inliers) + ' ,out of: ' + str(number_of_points)+ '.')
     else:
@@ -135,32 +152,75 @@ def estimating_current_pose(
     
     # Visualize the results
     if visualization == True:
-        visualize_pose(figure, R, t, landmarks)
+        visualize_pose(figure, image, R, t, landmarks, inlier_keypoints.T, outlier_keypoints.T)
     
     return R, t
 
-def visualize_pose(figure, R, t, landmarks):
+def visualize_pose(
+        figure: Figure, 
+        image: np.ndarray, 
+        R: np.ndarray, 
+        t: np.ndarray, 
+        landmarks: np.ndarray, 
+        keypoints_inliers: np.ndarray,
+        keypoints_outliers: np.ndarray
+        ):
+    """
+    Visualization of the camera pose and for the inliers.
+
+    Parameters:
+        figure (Figure): 3D landmarks and camera pose visualization.
+        image (np.ndarray): For inlier visualization.
+        R (np.ndarray): Rotation matrix of the current frame. Dimension: 3x3
+        t (np.ndarray): Translation vector of the current frame. Dimension: 3x1
+        landmarks (np.ndarray): 3D landmarks. Dimension: Nx1x3
+        keypoints_inliers: (np.ndarray): 2D keypoints of inliers after RANSAC. Dimension: Nx1x2
+        keypoints_outliers: (np.ndarray): 2D keypoints of outliers after RANSAC. Dimension: Nx1x2
+
+    Returns:
+        None
+    """
+    
     # Create a figure and axis
     fig = figure
-
-    ax = fig.add_subplot(111, projection='3d')
+    fig.clear()
 
     # Plotting the data
-    # ax.set_xlim3d(min(landmarks[:,:,0]), max(landmarks[:,:,0]))
-    # ax.set_ylim3d(min(landmarks[:,:,1]), max(landmarks[:,:,1]))
-    # ax.set_zlim3d(min(landmarks[:,:,2]), max(landmarks[:,:,2]))
-    # ax.set_xlim3d(-20, 45)
-    # ax.set_ylim3d(-20, 45)
-    # ax.set_zlim3d(-20, 45)
+    # ax = fig.add_subplot(1, 2, 1)
+    # ax.imshow(image, cmap='gray')
+    # # Plot the outliers
+    # ax.plot(keypoints_outliers[:, :, 0], keypoints_outliers[:, :, 1], 'rx', linewidth=2)
+    
+    # # Plot the inliers if there are any.
+    # if keypoints_inliers.size > 0:
+    #      ax.plot(keypoints_inliers[:, :, 0], keypoints_inliers[:, :, 1], 'og', linewidth=0.5)
 
-    ax.scatter(landmarks[:, :, 0], landmarks[:, :, 1], landmarks[:, :, 2], s=0.5)
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('z')
+    # ax.set_title('Inlier and outlier matches')
+    # ax.axis('off')
 
-    drawCamera(ax, -np.matmul(R.T, np.squeeze(t)), R.T, length_scale=10, head_size=10, equal_axis=True,set_ax_limits=True)
+    camera_position = -np.matmul(R, np.squeeze(t))
 
-    # Display the plot
-    #plt.show()
+    ax1 = fig.add_subplot(1, 2, 1)
+    ax1.scatter(landmarks[:, :, 0], landmarks[:, :, 1], color='blue', marker='.',  s=1)
+    ax1.scatter(camera_position[0], camera_position[1], color='red', marker='X', s=5)
+    ax1.set_xlim(-60,60)
+    ax1.set_ylim(-60,60)
+    ax1.set_xlabel('x')
+    ax1.set_ylabel('y')
+    ax1.set_title("2D view")
+
+    ax2 = fig.add_subplot(1, 2, 2, projection='3d')
+    ax2.scatter(landmarks[:, :, 0], landmarks[:, :, 1], landmarks[:, :, 2], s=1)
+
+    ax2.set_xlabel('x')
+    ax2.set_ylabel('y')
+    ax2.set_zlabel('z')
+
+    ax2.set_xlim3d(-60, 50)
+    ax2.set_ylim3d(-60, 50)
+    ax2.set_zlim3d(-60, 50)
+    ax2.set_title("3D view")
+
+    drawCamera(ax2, camera_position, R, length_scale=10, head_size=10, equal_axis=True, set_ax_limits=True)
 
     plt.pause(1)
