@@ -31,3 +31,18 @@ KLT_CRITERIA = (
     10,  # Maximum number of iterations the algorithm will take
     0.03,  # Epsilon value for convergence
 )
+
+################################################################
+# Params for 4.2 - RANSAC localization for pose estimation #
+################################################################
+
+# Number of iterations. Default: 100
+POSE_RANSAC_ITERATION = 2000
+
+# Inlier threshold value used by the RANSAC procedure. 
+# The parameter value is the maximum allowed distance between the observed and computed point projections to consider it an inlier. Default: 8.0
+POSE_RANSAC_REPROJECTION_ERROR = 10.0
+
+# The probability that the algorithm produces a useful result. Default: 0.99
+POSE_RANSAC_CONFIDENCE = 0.999
+

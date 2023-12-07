@@ -5,4 +5,4 @@ dependencies:
   - python==3.9.18
   - numpy
   - opencv
-  - matplotlib
+  - matplotlib==3.5.3
