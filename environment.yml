@@ -2,7 +2,7 @@ name: vamr_vo
 channels:
   - defaults
 dependencies:
-  - python==3.9.18
+  - python==3.10
   - numpy
   - opencv
   - matplotlib==3.5.3

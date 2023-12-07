@@ -1,0 +1,48 @@
+Collecting package metadata (current_repodata.json): ...working... done
+Solving environment: ...working... done
+
+## Package Plan ##
+
+  environment location: /Users/kappi/miniconda3/envs/vamr_vo
+
+  added / updated specs:
+    - python
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    pip-23.3.1                 |  py312hca03da5_0         2.8 MB
+    python-3.12.0              |       h99e199e_0        14.0 MB
+    setuptools-68.0.0          |  py312hca03da5_0         1.2 MB
+    wheel-0.41.2               |  py312hca03da5_0         133 KB
+    xz-5.4.5                   |       h80987f9_0         366 KB
+    ------------------------------------------------------------
+                                           Total:        18.4 MB
+
+The following NEW packages will be INSTALLED:
+
+  bzip2              pkgs/main/osx-arm64::bzip2-1.0.8-h620ffc9_4 
+  expat              pkgs/main/osx-arm64::expat-2.5.0-h313beb8_0 
+  libcxx             pkgs/main/osx-arm64::libcxx-14.0.6-h848a8c0_0 
+  libffi             pkgs/main/osx-arm64::libffi-3.4.4-hca03da5_0 
+  ncurses            pkgs/main/osx-arm64::ncurses-6.4-h313beb8_0 
+  pip                pkgs/main/osx-arm64::pip-23.3.1-py312hca03da5_0 
+  python             pkgs/main/osx-arm64::python-3.12.0-h99e199e_0 
+  readline           pkgs/main/osx-arm64::readline-8.2-h1a28f6b_0 
+  setuptools         pkgs/main/osx-arm64::setuptools-68.0.0-py312hca03da5_0 
+  sqlite             pkgs/main/osx-arm64::sqlite-3.41.2-h80987f9_0 
+  tk                 pkgs/main/osx-arm64::tk-8.6.12-hb8d0fd4_0 
+  tzdata             pkgs/main/noarch::tzdata-2023c-h04d1e81_0 
+  wheel              pkgs/main/osx-arm64::wheel-0.41.2-py312hca03da5_0 
+  xz                 pkgs/main/osx-arm64::xz-5.4.5-h80987f9_0 
+  zlib               pkgs/main/osx-arm64::zlib-1.2.13-h5a0b063_0 
+
+
+Proceed ([y]/n)? 
+
+Downloading and Extracting Packages: ...working... done
+Preparing transaction: ...working... done
+Verifying transaction: ...working... done
+Executing transaction: ...working... done

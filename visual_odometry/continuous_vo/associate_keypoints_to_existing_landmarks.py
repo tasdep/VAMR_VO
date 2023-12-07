@@ -68,6 +68,9 @@ def track_and_update(
     # TODO: Check this is the intended way they want us to use RANSAC and that we are
     # allowed to use this opencv function.
     _, inlier_mask = cv2.findFundamentalMat(tracked_prev, tracked_new, cv2.FM_RANSAC)
+    if not np.sum(inlier_mask):
+        print("Error: No Inliers found")
+        return
     # ravel is a broadcasting thing to make inlier_mask 1d so it can be used across each
     # row of the arrays it's indexing.
     inlier_new = tracked_new[inlier_mask.ravel() == 1]  # Shape Nx2

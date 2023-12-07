@@ -1,58 +1,82 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from enum import Enum
-from mpl_toolkits.mplot3d import Axes3D
+
+from pathlib import Path
 import os
 
 import params.params as params
 
 from bootstrapping.initialization import initialize_pipeline
 from continuous_vo.associate_keypoints_to_existing_landmarks import track_and_update
+from continuous_vo.estimating_current_pose import estimating_current_pose
 
 from utils.state import State
 
 
-class Dataset(Enum):
-    DATASET1 = "Shared dataset"
-    DATASET2 = "Kitti"
-    DATASET3 = "Malaga"
+def update_visualization(
+    fig, ax1, ax2, ax3, current_image, state, R, t, camera_pose_history
+):
+    # Update Plot 1: Current image with keypoints
+    ax1.clear()
+    ax1.set_title("Current Image with Keypoints")
+    img_with_keypoints = current_image
+    for p in state.P.T:
+        p = p.astype(int)
+        cv2.circle(
+            img_with_keypoints,
+            (p[1], p[0]),
+            radius=3,
+            color=(0, 255, 0),
+            thickness=-1,
+        )
+    if state.C:
+        for c in state.C.T:
+            c = c.astype(int)
+            cv2.circle(
+                img_with_keypoints,
+                (c[1], c[0]),
+                radius=3,
+                color=(255, 0, 0),
+                thickness=-1,
+            )
+    ax1.imshow(img_with_keypoints)
 
+    # Update Plot 2: 3D Point Cloud with Camera Pose
+    ax2.clear()
+    ax2.set_title("3D Point Cloud with Camera Pose")
+    ax2.set_xlabel("X axis")
+    ax2.set_ylabel("Y axis")
+    ax2.set_zlabel("Z axis")
+    print(state.X.shape)
+    ax2.scatter(state.X[0, :], state.X[1, :], state.X[2, :])
+    cam_length = 2.0
+    for i in range(3):
+        direction = R[:, i]
+        ax2.quiver(*t.ravel(), *direction, length=cam_length, color=["r", "g", "b"][i])
 
-dataset = Dataset.DATASET1
+    # Set fixed limits for the axes
+    # You need to mess with this depending on the dataset.
+    ax2.set_xlim([-100, 100])
+    ax2.set_ylim([-100, 100])
+    ax2.set_zlim([-100, 100])
 
+    # Set a consistent orientation
+    ax2.view_init(elev=-80, azim=90)
 
-# Example usage:
-# visualize_odometry(current_frame, keypoints_2d, points_3d, camera_pose, camera_poses_history)
-def visualize_odometry(current_frame, keypoints_2d, points_3d, camera_pose, camera_poses_history):
-    # Display the current frame with keypoints
-    for point in keypoints_2d.T:
-        cv2.circle(current_frame, (int(point[1]), int(point[0])), 5, (0, 255, 0), -1)
+    # Add a marker for the origin
+    ax2.scatter([0], [0], [0], color="k", marker="o")  # Black dot at the origin
 
-    cv2.imshow("Current Frame with Keypoints", current_frame)
-    cv2.waitKey(1)  # Adjust the delay as needed, 0 for a keypress
+    # Update Plot 3: 2D Camera Pose History
+    ax3.clear()
+    ax3.set_title("2D Top-Down Camera Pose History")
+    ax3.set_xlabel("X axis")
+    ax3.set_ylabel("Y axis")
+    ax3.plot(camera_pose_history[0, :], camera_pose_history[1, :])
 
-    # Prepare for 3D plot
-    fig = plt.figure(figsize=(10, 7))
-    ax = fig.add_subplot(111, projection="3d")
-
-    # Plot 3D points
-    ax.scatter(points_3d[0, :], points_3d[1, :], points_3d[2, :], c="blue")
-
-    # Plot current camera position
-    cam_position = camera_pose[:3, 3]
-    ax.scatter(cam_position[0], cam_position[1], cam_position[2], c="red", marker="o")
-
-    # Plot camera poses over time
-    ax.plot(camera_poses_history[0, :], camera_poses_history[1, :], camera_poses_history[2, :], color="green")
-
-    # Setting labels for axes
-    ax.set_xlabel("X Axis")
-    ax.set_ylabel("Y Axis")
-    ax.set_zlabel("Z Axis")
-
-    # Show the plot
-    plt.show()
+    plt.draw()
+    plt.pause(0.001)  # Necessary for the plot to update
+    plt.waitforbuttonpress()  # Wait for keyboard input
 
 
 def image_generator(folder_path):
@@ -65,63 +89,115 @@ def image_generator(folder_path):
     Yields:
     - Tuple[str, np.ndarray]: Image filename and corresponding image array.
     """
+    idx = -1
     for filename in sorted(os.listdir(folder_path)):
         if filename.endswith((".jpg", ".jpeg", ".png", ".gif")):
+            idx += 1
             image_path = os.path.join(folder_path, filename)
             image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-            yield filename, image
+            color_image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+            yield idx, filename, image, color_image
 
 
 if __name__ == "__main__":
     ###############################
     # Load data                   #
     ###############################
-    match dataset:
-        case Dataset.DATASET1:
-            folder_path = "..\shared_data\parking\images"
-            K: np.ndarray = np.genfromtxt("..\shared_data\parking\K.txt", delimiter=",", dtype=float)  # calibration matrix[3x3]
+    base_path = Path(__file__).parent
+    match params.DATASET:
+        case params.Dataset.DATASET1:
+            folder_path = (base_path / "../shared_data/parking/images").resolve()
+            calib_path = (base_path / "../shared_data/parking/K.txt").resolve()
+            K: np.ndarray = np.genfromtxt(
+                calib_path, delimiter=",", dtype=float
+            )  # calibration matrix[3x3]
             pass
-        case Dataset.DATASET2:
+        case params.Dataset.DATASET2:
             pass
-        case Dataset.DATASET3:
+        case params.Dataset.DATASET3:
             pass
+        case params.Dataset.DATASET4:
+            folder_path = (base_path / "../local_data/test_data").resolve()
+            calib_path = (base_path / "../local_data/test_data/K.txt").resolve()
+            K: np.ndarray = np.genfromtxt(
+                calib_path, delimiter=" ", dtype=float
+            )  # calibration matrix[3x3]
 
     ###############################
     # Bootstrap Initial Landmarks #
     ###############################
-    generator = image_generator(folder_path)
-    images: list[np.ndarray] = []
-    for _ in range(10):
-        _, image = next(generator)
-        images.append(image)
-    images: np.ndarray = np.array(images)
+    if params.SKIP_BOOTSTRAP:
+        if params.DATASET != params.Dataset.DATASET4:
+            print(
+                "Error: Must use Dataset 4 (local_data from ransac ex) for skipping initialization"
+            )
+            os._exit()
+        keypoints = np.loadtxt(
+            (base_path / "../local_data/test_data/keypoints.txt").resolve()
+        ).T
+        p_W_landmarks = np.loadtxt(
+            (base_path / "../local_data/test_data/p_W_landmarks.txt").resolve()
+        ).T
+        initial_state = State()
+        initial_state.update_landmarks(p_W_landmarks, keypoints)
 
-    initial_state: State
-    initial_pose: np.ndarray
-    initial_state, initial_pose = initialize_pipeline(images, K, visualise=False, print_stats=True)
+    else:
+        generator = image_generator(folder_path)
+        images: list[np.ndarray] = []
+        for _ in range(10):
+            _, _, image, _ = next(generator)
+            images.append(image)
+        images: np.ndarray = np.array(images)
 
-    visualize_odometry(images[params.BOOTSRAP_FRAMES[1]], initial_state.P, initial_state.X, initial_pose, np.zeros((4, 4)))
+        initial_state: State
+        initial_pose: np.ndarray
+        initial_state, initial_pose = initialize_pipeline(
+            images, K, visualise=True, print_stats=True
+        )
+
     ###############################
     # Continuous Visual Odometry  #
     ###############################
 
+    # Initialize visualization
+    # Create a figure and subplots outside the function
+    plt.ion()  # Turn on interactive mode
+    fig = plt.figure(figsize=(10, 8))
+    gs = plt.GridSpec(2, 2, height_ratios=[1, 1])
+    ax1 = fig.add_subplot(gs[0, :])
+    ax2 = fig.add_subplot(gs[1, 0], projection="3d")
+    ax3 = fig.add_subplot(gs[1, 1])
+
     current_state: State = initial_state
     prev_image: np.ndarray = None
     camera_poses_history: list[np.ndarray] = []
-    # loop through images
-    # Example usage:
     generator = image_generator(folder_path)
 
-    _, prev_image = next(generator)
-
-    for filename, new_image in generator:
-        # Process the image as needed
-        if False:
-            cv2.imshow("Image", image)
-            cv2.waitKey(100)
-        track_and_update(current_state, prev_image, new_image, True, new_image)
-        # visualize_odometry()
-        # run pipeline
-        # visualise current image, actual current keypoints
-        # 3D point cloud + current camera pose
-        # track camera pose over time and plot in X,Y plane
+    camera_pose_history = np.zeros((3, len(os.listdir(folder_path))))
+    prev_image = None
+    for idx, filename, new_image, color_image in generator:
+        print(f"Analyzing image {idx}")
+        if prev_image is None:
+            prev_image = new_image
+            continue
+        track_and_update(
+            current_state,
+            prev_image,
+            new_image,
+            visualize=False,
+            visualizer_img=color_image,
+        )
+        R, t = estimating_current_pose(current_state, K, visualization=False)
+        camera_pose_history[:, idx] = t.squeeze()
+        update_visualization(
+            fig,
+            ax1,
+            ax2,
+            ax3,
+            color_image,
+            current_state,
+            R,
+            t,
+            camera_pose_history[:, :idx],
+        )
+        prev_image = new_image
