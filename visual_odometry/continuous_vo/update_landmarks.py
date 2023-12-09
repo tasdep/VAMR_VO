@@ -76,11 +76,11 @@ def get_updated_keypoints(
 # this checks if there are any candidates for triangulation and moves them from C,F,T to X,P
 def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray) -> State:
     # do projections
-    for C,F,T in zip(old_state.C, old_state.F, old_state.T):
-        print(C,F,T)
+    for C, F, T in zip(old_state.C, old_state.F, old_state.T):
+        print(C, F, T)
     # calculate angle for each candiate
     # threshold angles
-    # those above threshold calculate X 
+    # those above threshold calculate X
     # refine X estimate with solvePnP
     # move candidate to X,P in state
     return old_state
