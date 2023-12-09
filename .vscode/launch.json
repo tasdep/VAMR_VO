@@ -5,12 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Test 4.3",
+            "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "module": "continuous_vo.test_update_landmarks",
-            "justMyCode": true,
-            "cwd": "${workspaceFolder}/visual_odometry"
+            "program": "${file}",
+            "cwd": "${workspaceFolder}/visual_odometry",
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }

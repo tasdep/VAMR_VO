@@ -6,6 +6,7 @@ Our VAMR VO pipeline project :)
 - [Subject website](https://rpg.ifi.uzh.ch/teaching.html)
 - [Project FAQ website](https://docs.google.com/document/d/1IuWmXyO1m5DV77AhEa-MpK-yp9LDMQO5IM6oyVLvHa0/edit#heading=h.w8vo6xo5cuee)
 - [Overleaf draft report](https://www.overleaf.com/1966191675jhdpcgnggbfs#a129d1)
+- [4.3 Pseudocode](https://docs.google.com/document/d/1G66pdkz_V2rK24olrELUtHSQnHHMSyiDgMahU2Wfno0/edit)
 
 ## Work Division
 ### Initialization - Tas

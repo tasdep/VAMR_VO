@@ -11,7 +11,12 @@ from utils.utils import create_homogeneous_matrix
 
 
 # ASSUMPTION K_1 = K_2
-def initialize_pipeline(input_images: np.ndarray, K: np.ndarray, visualise: bool = False, print_stats: bool = False) -> State:
+def initialize_pipeline(
+    input_images: np.ndarray,
+    K: np.ndarray,
+    visualise: bool = False,
+    print_stats: bool = False,
+) -> State:
     # 2 frames from dataset and params
     img_1: np.ndarray = input_images[params.BOOTSRAP_FRAMES[0], ...]
     img_2: np.ndarray = input_images[params.BOOTSRAP_FRAMES[1], ...]
@@ -34,30 +39,51 @@ def initialize_pipeline(input_images: np.ndarray, K: np.ndarray, visualise: bool
     # match the descriptors between images
     # cross check only returns matches where the nearest keypoint is consistent between images
     bf: cv2.BFMatcher = cv2.BFMatcher.create(cv2.NORM_L2, crossCheck=True)
-    matches = bf.match(queryDescriptors=descriptors_1.astype(np.float32), trainDescriptors=descriptors_2.astype(np.float32))
+    matches = bf.match(
+        queryDescriptors=descriptors_1.astype(np.float32),
+        trainDescriptors=descriptors_2.astype(np.float32),
+    )
 
     if print_stats:
         print(f"{len(matches)=}")
 
     # Create keypoint objects from numpy arrays
-    keypoints1_lst: list[cv2.KeyPoint] = [cv2.KeyPoint(float(x), float(y), 1) for y, x in keypoints_1]
-    keypoints2_lst: list[cv2.KeyPoint] = [cv2.KeyPoint(float(x), float(y), 1) for y, x in keypoints_2]
+    keypoints1_lst: list[cv2.KeyPoint] = [
+        cv2.KeyPoint(float(x), float(y), 1) for y, x in keypoints_1
+    ]
+    keypoints2_lst: list[cv2.KeyPoint] = [
+        cv2.KeyPoint(float(x), float(y), 1) for y, x in keypoints_2
+    ]
 
     if visualise:
         img3 = cv2.drawMatches(
-            img_1, keypoints1_lst, img_2, keypoints2_lst, matches, None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS
+            img_1,
+            keypoints1_lst,
+            img_2,
+            keypoints2_lst,
+            matches,
+            None,
+            flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
         )
         plt.imshow(img3)
         plt.show()
 
     # get matched keypoints to estimate fundamental matrix
-    matched_pts_1 = np.float32([keypoints_1[m.queryIdx] for m in matches]).reshape(-1, 2)
-    matched_pts_2 = np.float32([keypoints_2[m.trainIdx] for m in matches]).reshape(-1, 2)
+    matched_pts_1 = np.float32([keypoints_1[m.queryIdx] for m in matches]).reshape(
+        -1, 2
+    )
+    matched_pts_2 = np.float32([keypoints_2[m.trainIdx] for m in matches]).reshape(
+        -1, 2
+    )
 
     fundamental: np.ndarray
     mask: np.ndarray
     fundamental, mask = cv2.findFundamentalMat(
-        matched_pts_1, matched_pts_2, cv2.FM_RANSAC, params.RANSAC_REPROJ_THRESH, params.RANSAC_CONFIDENCE
+        matched_pts_1,
+        matched_pts_2,
+        cv2.FM_RANSAC,
+        params.RANSAC_REPROJ_THRESH,
+        params.RANSAC_CONFIDENCE,
     )
 
     # visualise inlier matches after RANSAC
@@ -67,7 +93,13 @@ def initialize_pipeline(input_images: np.ndarray, K: np.ndarray, visualise: bool
 
     if visualise:
         img3 = cv2.drawMatches(
-            img_1, keypoints1_lst, img_2, keypoints2_lst, inlier_matches, None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS
+            img_1,
+            keypoints1_lst,
+            img_2,
+            keypoints2_lst,
+            inlier_matches,
+            None,
+            flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
         )
         plt.imshow(img3)
         plt.show()
@@ -104,16 +136,26 @@ def initialize_pipeline(input_images: np.ndarray, K: np.ndarray, visualise: bool
 
     # Visualisation
     if visualise:
-        visualise_pose_and_landmarks(R_correct, t_correct, img_1, img_2, X, inlier_pts_1, inlier_pts_2)
+        visualise_pose_and_landmarks(
+            R_correct, t_correct, img_1, img_2, X, inlier_pts_1, inlier_pts_2
+        )
 
     # initialise the pipeline object with the keypoints and landmarks
     # note: C,F,T are blank as there are no candidates at this point
-    return State().update_landmarks(X, P)
+    state = State()
+    state.update_landmarks(X, P)
+    return state, create_homogeneous_matrix(R_correct, t_correct)
 
 
 
 
-def disambiguateRelativePose(rots: np.ndarray, t: np.ndarray, points_1: np.ndarray, points_2: np.ndarray, K: np.ndarray):
+def disambiguateRelativePose(
+    rots: np.ndarray,
+    t: np.ndarray,
+    points_1: np.ndarray,
+    points_2: np.ndarray,
+    K: np.ndarray,
+):
     """DISAMBIGUATERELATIVEPOSE- finds the correct relative camera pose (among
     four possible configurations) by returning the one that yields points
     lying in front of the image plane (with positive depth).
@@ -187,7 +229,13 @@ def visualise_pose_and_landmarks(
     center_cam2_W = -R.T @ t
     center_cam2_W = center_cam2_W.reshape(-1)
     drawCamera(ax, center_cam2_W, R.T, length_scale=2)
-    ax.text(center_cam2_W[0] - 0.1, center_cam2_W[1] - 0.1, center_cam2_W[2] - 0.1, "Cam 2")
+    ax.text(
+        center_cam2_W[0] - 0.1, center_cam2_W[1] - 0.1, center_cam2_W[2] - 0.1, "Cam 2"
+    )
+
+    # ax.set_xlim([-5, 50])
+    # ax.set_ylim([-5, 50])
+    # ax.set_zlim([-5, 50])
 
     # Display matched points
     ax = fig.add_subplot(1, 3, 2)
