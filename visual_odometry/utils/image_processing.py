@@ -4,35 +4,37 @@ import matplotlib.pyplot as plt
 import params.params as params
 
 
-def run_harris_detector(img_1: np.ndarray, visualise: bool = False, print_stats: bool = False):
-
-   # find keypoint correspondences between frames, option to use intermediate frames
+def run_harris_detector(img: np.ndarray, visualise: bool = False, print_stats: bool = False):
+    # find keypoint correspondences between frames, option to use intermediate frames
     harris_params = {
         "blockSize": params.HARRIS_BLOCK_SIZE,
         "ksize": params.HARRIS_SOBEL_SIZE,
         "k": params.HARRIS_K,
     }
-    corners_1: np.ndarray = cv2.cornerHarris(img_1, **harris_params)
+    corners: np.ndarray = cv2.cornerHarris(img, **harris_params)
 
     # extract keypoints from corner detector
-    keypoints_1 = np.argwhere(corners_1 > params.KEYPOINT_THRESHOLD * corners_1.max())
+    keypoints: np.ndarray = np.argwhere(corners > params.KEYPOINT_THRESHOLD * corners.max())
 
     if print_stats:
-        print(f"{keypoints_1.shape=}")
+        print(f"{keypoints.shape=}")
 
     if visualise:
         fig, axs = plt.subplots(1, 1)
-        axs[0].imshow(img_1, cmap="gray")
-        axs[0].plot(keypoints_1[:, 1], keypoints_1[:, 0], "rx")
+        axs.imshow(img, cmap="gray")
+        axs.plot(keypoints[:, 1], keypoints[:, 0], "rx")
         plt.show()
 
-    return keypoints_1
+    return keypoints
 
-def describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> np.ndarray:
+
+def patch_describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> np.ndarray:
     """
     Returns a (2r+1)^2xN matrix of image patch vectors based on image img and a 2xN matrix containing the keypoint
     coordinates. r is the patch "radius".
     """
+    if keypoints is None:
+        return np.ndarray((0, (2 * r + 1) ** 2))
     N: int = keypoints.shape[0]
     descriptors: np.ndarray = np.zeros([N, (2 * r + 1) ** 2])
     padded: np.ndarray = np.pad(img, [(r, r), (r, r)], mode="constant", constant_values=0)

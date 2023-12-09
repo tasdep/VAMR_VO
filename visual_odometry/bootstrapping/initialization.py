@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import params.params as params
 from utils.visualisation import drawCamera
 from utils.state import State
-from utils.image_processing import run_harris_detector,describe_keypoints
+from utils.image_processing import run_harris_detector,patch_describe_keypoints
 
 
 # ASSUMPTION K_1 = K_2
@@ -17,42 +17,16 @@ def initialize_pipeline(input_images: np.ndarray, K: np.ndarray, visualise: bool
 
     assert img_1.shape == img_2.shape
 
-    # # find keypoint correspondences between frames, option to use intermediate frames
-    # harris_params = {
-    #     "blockSize": params.HARRIS_BLOCK_SIZE,
-    #     "ksize": params.HARRIS_SOBEL_SIZE,
-    #     "k": params.HARRIS_K,
-    # }
-    # corners_1: np.ndarray = cv2.cornerHarris(img_1, **harris_params)
-    # corners_2: np.ndarray = cv2.cornerHarris(img_2, **harris_params)
-
-    # # extract keypoints from corner detector
-    # keypoints_1 = np.argwhere(corners_1 > params.KEYPOINT_THRESHOLD * corners_1.max())
-    # keypoints_2 = np.argwhere(corners_2 > params.KEYPOINT_THRESHOLD * corners_2.max())
-
-    # if print_stats:
-    #     print(f"{keypoints_1.shape=}")
-    #     print(f"{keypoints_2.shape=}")
-
-    # if visualise:
-    #     fig, axs = plt.subplots(1, 2)
-    #     axs[0].imshow(img_1, cmap="gray")
-    #     axs[0].plot(keypoints_1[:, 1], keypoints_1[:, 0], "rx")
-    #     axs[1].imshow(img_2, cmap="gray")
-    #     axs[1].plot(keypoints_2[:, 1], keypoints_2[:, 0], "rx")
-    #     plt.show()
-
     keypoints_1 = run_harris_detector(img_1,visualise, print_stats)
     keypoints_2 = run_harris_detector(img_2,visualise, print_stats)
-
 
     # TODO try adaptive thresholding, https://docs.opencv.org/3.4/d7/d4d/tutorial_py_thresholding.html to acheive more uniform keypoints
     # TODO non maxima suppresion to select best n keypoints or just to reduce any crossover
     # TODO try KLT instead of descriptor matching
 
     # calculate patch descriptors
-    descriptors_1: np.ndarray = describe_keypoints(img_1, keypoints_1, params.DESC_PATCH_RAD)
-    descriptors_2: np.ndarray = describe_keypoints(img_2, keypoints_2, params.DESC_PATCH_RAD)
+    descriptors_1: np.ndarray = patch_describe_keypoints(img_1, keypoints_1, params.DESC_PATCH_RAD)
+    descriptors_2: np.ndarray = patch_describe_keypoints(img_2, keypoints_2, params.DESC_PATCH_RAD)
 
     # TODO try ratio test instead of crossCheck
 
@@ -100,7 +74,7 @@ def initialize_pipeline(input_images: np.ndarray, K: np.ndarray, visualise: bool
     # find essential matrix
     essential: np.ndarray = K.T @ fundamental @ K
 
-    # get remaining keypoints after RANSAC
+    # get remaining keypoints after RANSAC during fundamental matrix
     inlier_pts_1: np.ndarray = matched_pts_1[mask.ravel() == 1]
     inlier_pts_2: np.ndarray = matched_pts_2[mask.ravel() == 1]
     if print_stats:

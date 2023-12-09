@@ -10,6 +10,7 @@ HARRIS_BLOCK_SIZE = 9
 HARRIS_SOBEL_SIZE = 3
 HARRIS_K = 0.1
 
+# after harris corner detector to threshold which points are corners
 KEYPOINT_THRESHOLD = 0.01
 
 DESC_PATCH_RAD = 3
@@ -31,3 +32,17 @@ KLT_CRITERIA = (
     10,  # Maximum number of iterations the algorithm will take
     0.03,  # Epsilon value for convergence
 )
+
+################################################################
+# Params for 4.3 - Associating keypoints to exisitng landmarks #
+################################################################
+# threshold to determine whether a newly detected keypoint is the same as a currently tracked one
+# eg. when comparing candidate keypoints to state.P
+# value is a pixel radius
+EQUAL_KEYPOINT_THRESHOLD = 1
+
+# minimum distance between matches for them to be equal
+MATCH_DISTANCE_THRESHOLD = 1
+
+# threshold for angle between camera poses to add candidate to landmark set
+TRIANGULATION_THRESHOLD = 10 # [deg]

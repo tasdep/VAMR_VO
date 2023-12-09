@@ -1,58 +1,83 @@
-from utils.state import State
-from utils.image_processing import run_harris_detector, describe_keypoints
 import numpy as np
-# import cv2
-# import matplotlib.pyplot as plt
+import cv2
+import matplotlib.pyplot as plt
 import params.params as params
+import math
 
-def get_candidate_keypoints(P: np.ndarray, img_1: np.ndarray, visualise: bool = False, print_stats: bool = False) -> (np.ndarray,np.ndarray):
-    #get the new keypoints with harris detector
-    keypoints_new = run_harris_detector(img_1,visualise, print_stats)
-    new_C = np.array(np.ndarray(keypoints_new.shape))
-    new_descriptors = np.array(np.ndarray(keypoints_new.shape)) #descriptor jas same shape as detector ????
-    #compare each keypoint in P with the new kepoints 
+from utils.state import State
+from utils.image_processing import run_harris_detector, patch_describe_keypoints
+
+
+def get_candidate_keypoints(
+    state: State, img_new: np.ndarray, visualise: bool = False, print_stats: bool = False
+) -> (np.ndarray, np.ndarray):
+    # get the new keypoints with harris detector
+    keypoints_new = run_harris_detector(img_new, visualise, print_stats)
+    new_C: np.ndarray
+    new_descriptors: np.ndarray
+    # compare each keypoint in P with the new kepoints
     # and only keep those that don't have a match in P
-  
-    for keypoint_new in keypoints_new:  
-        flag = False
-        for keypoint_old in P:
-            #check similarity using ssd with a predefined threshold
-            ssd = np.sum((keypoint_old-keypoint_new)**2)
-            if(ssd <= params.KEYPOINT_THRESHOLD):
-                flag = True
-        if flag is False:
-            np.append(new_C,keypoint_new)
-            #save the descriptor of the new candidate keypoint
-            new_descriptor = describe_keypoints(img_1, keypoints_new, params.DESC_PATCH_RAD)
-            np.append(new_descriptors,new_descriptor)
-            
+    if state.P:
+        for keypoint_new in keypoints_new:
+            flag: bool = False
+            for keypoint_old in state.P:
+                # check similarity of location
+                if np.allclose(keypoint_new, keypoint_old, atol=params.EQUAL_KEYPOINT_THRESHOLD, rtol=0):
+                    flag = True
+            if flag is False:
+                # not similar so save it
+                new_C.append(keypoint_new)
+    else:
+        new_C = keypoints_new
+
+    # calculate the descriptors of the new keypoints
+    new_descriptors = patch_describe_keypoints(img_new, new_C, params.DESC_PATCH_RAD)
     return new_C, new_descriptors
 
 
-def get_updated_keypoints(state:State,current_camera_pose:np.ndarray, img_prev: np.ndarray,img_new: np.ndarray, new_C: np.ndarray, new_descriptors: np.ndarray) -> State:
+def get_updated_keypoints(
+    state: State,
+    current_camera_pose: np.ndarray,
+    img_prev: np.ndarray,
+    img_new: np.ndarray,
+    new_C: np.ndarray,
+    new_descriptors: np.ndarray,
+) -> State:
+    # F,T will be the same size as new_C
     new_F = np.ndarray(new_C.shape)
-    new_T = np.ndarray(new_C.shape)
-    old_descriptors = describe_keypoints(img_prev, state.C, params.DESC_PATCH_RAD)
-    
-    for (indx_new, keypoint_new) in enumerate(new_C):  
-        flag = False
-        min_ssd = params.KEYPOINT_THRESHOLD +1 
-        min_indx_old = -1
-        for (indx_old, keypoint_old) in enumerate(state.C):
-            #check similarity using ssd with a predefined threshold
-            ssd = np.sum((old_descriptors[indx_old]-new_descriptors[indx_new])**2)  
-            if(ssd <= params.KEYPOINT_THRESHOLD and ssd < min_ssd):
-                min_ssd = ssd 
-                min_indx_old = indx_old
-                flag = True
-        #No match
-        if flag is False:
-            np.append(new_F,keypoint_new)
-            np.append(new_T,current_camera_pose)
-        if flag is True:
-            np.append(new_F,state.F[min_indx_old])
-            np.append(new_T,state.T[min_indx_old])
+    new_T = np.ndarray((new_C.shape[0], 16))
+    old_descriptors = patch_describe_keypoints(img_prev, state.C, params.DESC_PATCH_RAD)
+
+    # find best match for each new descriptor
+    bf: cv2.BFMatcher = cv2.BFMatcher.create(cv2.NORM_L2)
+    matches = bf.match(queryDescriptors=old_descriptors.astype(np.float32), trainDescriptors=new_descriptors.astype(np.float32))
+
+    # check matches whether they are close enough to be the same
+    for i, candidate in enumerate(new_C):
+        try:
+            m = matches[i]
+        except IndexError:
+            m = None
+        if m and m.distance < params.MATCH_DISTANCE_THRESHOLD:
+            # match => this is an existing candidate, propagate F,T entries
+            new_F[i] = state.F[m.queryIdx]
+            new_T[i] = state.T[m.queryIdx]
+        else:
+            # No match => this is a new candidate, create new F,T entries
+            new_F[i] = new_C[i]
+            new_T[i] = current_camera_pose
+
+    # transpose to make them 2 X N
+    state.update_candidates(new_C.T, new_F.T, new_T.T)
+    return state
 
 
-            #check angle 
-    return state.update_candidates(new_C,new_F,new_T)
+# TODO to be run after updating candidates
+# this checks if there are any candidates for triangulation and moves them from C,F,T to X,P
+def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray) -> State:
+    # calculate angle for each candiate
+    # threshold angles
+    # those above threshold calculate X 
+    # refine X estimate with solvePnP
+    # move candidate to X,P in state
+    return old_state
