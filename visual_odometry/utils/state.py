@@ -2,6 +2,7 @@
 
 
 import numpy as np
+from typing import Optional
 
 
 class State:
@@ -61,16 +62,20 @@ class State:
     def T(self):
         return self._T
 
+    def shape_or_none(self, attr: str) -> str:
+        try:
+            return f"{attr}.shape={getattr(self, attr).shape}"
+        except AttributeError:
+            return f"{attr} is of type None."
+
+    def __str__(self) -> str:
+        return f"State object. {self.shape_or_none('_X')} {self.shape_or_none('_P')} {self.shape_or_none('_C')} {self.shape_or_none('_F')} {self.shape_or_none('_T')}"
+
     def update_landmarks(self, new_X: np.ndarray, new_P: np.ndarray) -> None:
         """Update the 3D landmarks and their corresponding 2D keypoints."""
-        if (
-            new_P.shape[0] != 2
-            or new_X.shape[0] != 3
-            or new_P.shape[1] != new_X.shape[1]
-        ):
+        if new_P.shape[0] != 2 or new_X.shape[0] != 3 or new_P.shape[1] != new_X.shape[1]:
             raise ValueError(
-                f"Incorrect input shape. P must be 2xN (shape is {new_P.shape}) "
-                f"and X must be 3xN (shape is {new_X.shape})."
+                f"Incorrect input shape. P must be 2xN (shape is {new_P.shape}) " f"and X must be 3xN (shape is {new_X.shape})."
             )
         self._X = new_X
         self._P = new_P
@@ -85,9 +90,7 @@ class State:
         self._P = np.hstack([self._P, new_2D_point])
         self._X = np.hstack([self._X, new_3D_point])
 
-    def update_candidates(
-        self, new_C: np.ndarray, new_F: np.ndarray, new_T: np.ndarray
-    ) -> None:
+    def update_candidates(self, new_C: np.ndarray, new_F: np.ndarray, new_T: np.ndarray) -> None:
         """Update the candidate keypoints, their first observations, and corresponding camera poses."""
         if (
             new_C.shape[0] != 2
