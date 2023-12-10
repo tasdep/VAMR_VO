@@ -46,6 +46,9 @@ def patch_describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> 
     return descriptors
 
 def triangulate_points_wrapper(T1: np.ndarray, T2: np.ndarray, K: np.ndarray, points_1: np.ndarray, points_2: np.ndarray):
+    # dehomogenize transforms
+    T1 = T1[0:3,:]
+    T2 = T2[0:3,:]
     M1: np.ndarray = K @ T1
     M2: np.ndarray = K @ T2
     points_3D: np.ndarray = cv2.triangulatePoints(M1, M2, points_1, points_2)

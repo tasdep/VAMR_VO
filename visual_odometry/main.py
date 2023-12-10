@@ -10,10 +10,13 @@ import params.params as params
 from bootstrapping.initialization import initialize_pipeline
 from continuous_vo.associate_keypoints_to_existing_landmarks import track_and_update
 from continuous_vo.estimating_current_pose import estimating_current_pose
+from continuous_vo.update_landmarks import update_landmarks
 
 from utils.state import State
+from utils.utils import create_homogeneous_matrix
 
-
+# RED = Candidates
+# GREEN = Landmarks
 def update_visualization(
     fig, ax1, ax2, ax3, current_image, state, R, t, camera_pose_history
 ):
@@ -30,7 +33,7 @@ def update_visualization(
             color=(0, 255, 0),
             thickness=-1,
         )
-    if state.C:
+    if state.C is not None:
         for c in state.C.T:
             c = c.astype(int)
             cv2.circle(
@@ -152,7 +155,7 @@ if __name__ == "__main__":
         initial_state: State
         initial_pose: np.ndarray
         initial_state, initial_pose = initialize_pipeline(
-            images, K, visualise=True, print_stats=True
+            images, K, visualise=False, print_stats=False
         )
 
     ###############################
@@ -188,7 +191,11 @@ if __name__ == "__main__":
             visualizer_img=color_image,
         )
         R, t = estimating_current_pose(current_state, K, visualization=False)
+        curr_pose: np.ndarray = create_homogeneous_matrix(R, t).flatten()
         camera_pose_history[:, idx] = t.squeeze()
+        print(current_state)
+        current_state = update_landmarks(current_state, prev_image, new_image, curr_pose, K)
+        print(current_state)
         update_visualization(
             fig,
             ax1,

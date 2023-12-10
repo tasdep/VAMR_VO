@@ -146,9 +146,6 @@ def initialize_pipeline(
     state.update_landmarks(X, P)
     return state, create_homogeneous_matrix(R_correct, t_correct)
 
-
-
-
 def disambiguateRelativePose(
     rots: np.ndarray,
     t: np.ndarray,

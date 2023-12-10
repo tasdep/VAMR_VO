@@ -18,18 +18,18 @@ DATASET = Dataset.DATASET4
 # Whether to use the skip and use the test data that already has
 # correspondences. In order to use this, you must copy the dataset
 # from the RANSAC class exercise into your local_data folder.
-SKIP_BOOTSTRAP = False
+SKIP_BOOTSTRAP = True
 
 # Which frames from the input to use for bootstrapping initial features.
 BOOTSRAP_FRAMES = [0, 3]
 
-HARRIS_BLOCK_SIZE = 15
+HARRIS_BLOCK_SIZE = 9
 HARRIS_SOBEL_SIZE = 3
 # Magic number in harris algo
 HARRIS_K = 0.1
 
 # after harris corner detector to threshold which points are corners
-KEYPOINT_THRESHOLD = 0.01
+KEYPOINT_THRESHOLD = 0.1
 
 DESC_PATCH_RAD = 3
 
@@ -70,10 +70,10 @@ POSE_RANSAC_CONFIDENCE = 0.999
 # threshold to determine whether a newly detected keypoint is the same as a currently tracked one
 # eg. when comparing candidate keypoints to state.P
 # value is a pixel radius
-EQUAL_KEYPOINT_THRESHOLD = 1
+EQUAL_KEYPOINT_THRESHOLD = 2.1
 
 # minimum distance between matches for them to be equal
 MATCH_DISTANCE_THRESHOLD = 1
 
 # threshold for angle between camera poses to add candidate to landmark set
-TRIANGULATION_THRESHOLD = 10 # [deg]
+TRIANGULATION_ANGLE_THRESHOLD = 10 # [deg]
