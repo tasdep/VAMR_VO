@@ -4,16 +4,21 @@ import matplotlib.pyplot as plt
 
 from pathlib import Path
 import os
+import cProfile
+import pstats
 
 import params.params as params
 
 from bootstrapping.initialization import initialize_pipeline
 from continuous_vo.associate_keypoints_to_existing_landmarks import track_and_update
 from continuous_vo.estimating_current_pose import estimating_current_pose
+from continuous_vo.update_landmarks import update_landmarks
 
 from utils.state import State
+from utils.utils import create_homogeneous_matrix
 
-
+# RED = Candidates
+# GREEN = Landmarks
 def update_visualization(
     fig, ax1, ax2, ax3, current_image, state, R, t, camera_pose_history
 ):
@@ -30,7 +35,7 @@ def update_visualization(
             color=(0, 255, 0),
             thickness=-1,
         )
-    if state.C:
+    if state.C is not None:
         for c in state.C.T:
             c = c.astype(int)
             cv2.circle(
@@ -152,21 +157,25 @@ if __name__ == "__main__":
         initial_state: State
         initial_pose: np.ndarray
         initial_state, initial_pose = initialize_pipeline(
-            images, K, visualise=True, print_stats=True
+            images, K, visualise=False, print_stats=False
         )
 
     ###############################
     # Continuous Visual Odometry  #
     ###############################
 
-    # Initialize visualization
-    # Create a figure and subplots outside the function
-    plt.ion()  # Turn on interactive mode
-    fig = plt.figure(figsize=(10, 8))
-    gs = plt.GridSpec(2, 2, height_ratios=[1, 1])
-    ax1 = fig.add_subplot(gs[0, :])
-    ax2 = fig.add_subplot(gs[1, 0], projection="3d")
-    ax3 = fig.add_subplot(gs[1, 1])
+    if params.DO_PROFILING:
+        profiler = cProfile.Profile()
+        profiler.enable()
+    else:
+        # Initialize visualization
+        # Create a figure and subplots outside the function
+        plt.ion()  # Turn on interactive mode
+        fig = plt.figure(figsize=(10, 8))
+        gs = plt.GridSpec(2, 2, height_ratios=[1, 1])
+        ax1 = fig.add_subplot(gs[0, :])
+        ax2 = fig.add_subplot(gs[1, 0], projection="3d")
+        ax3 = fig.add_subplot(gs[1, 1])
 
     current_state: State = initial_state
     prev_image: np.ndarray = None
@@ -176,6 +185,8 @@ if __name__ == "__main__":
     camera_pose_history = np.zeros((3, len(os.listdir(folder_path))))
     prev_image = None
     for idx, filename, new_image, color_image in generator:
+        if params.LIMIT_FRAME_COUNT and idx > params.FRAME_LIMIT:
+            break
         print(f"Analyzing image {idx}")
         if prev_image is None:
             prev_image = new_image
@@ -188,16 +199,28 @@ if __name__ == "__main__":
             visualizer_img=color_image,
         )
         R, t = estimating_current_pose(current_state, K, visualization=False)
+        curr_pose: np.ndarray = create_homogeneous_matrix(R, t).flatten()
         camera_pose_history[:, idx] = t.squeeze()
-        update_visualization(
-            fig,
-            ax1,
-            ax2,
-            ax3,
-            color_image,
-            current_state,
-            R,
-            t,
-            camera_pose_history[:, :idx],
-        )
+        # print(current_state)
+        current_state = update_landmarks(current_state, prev_image, new_image, curr_pose, K, print_stats=True)
+        # print(current_state)
+        if not params.DO_PROFILING:
+            update_visualization(
+                fig,
+                ax1,
+                ax2,
+                ax3,
+                color_image,
+                current_state,
+                R,
+                t,
+                camera_pose_history[:, :idx],
+            )
         prev_image = new_image
+
+    if params.DO_PROFILING:
+        profiler.disable()
+        stats = pstats.Stats(profiler).sort_stats("ncalls")
+        # stats.strip_dirs()
+        stats.dump_stats("full_run.stats")
+        # stats.print_stats()

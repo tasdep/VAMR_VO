@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from utils import state
+from visual_odometry. utils import state
 from continuous_vo import associate_keypoints_to_existing_landmarks as assoc
 
 # To run, from visual_odometry directory:
