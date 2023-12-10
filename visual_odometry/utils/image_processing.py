@@ -5,7 +5,17 @@ import params.params as params
 
 
 def run_harris_detector(img: np.ndarray, visualise: bool = False, print_stats: bool = False):
-    # find keypoint correspondences between frames, option to use intermediate frames
+    """
+    Detects keypoints using the Harris corner detector on the given image.
+
+    Parameters:
+    - img: The input grayscale image.
+    - visualise: Flag to visualize the detected keypoints.
+    - print_stats: Flag to print statistics about the detected keypoints.
+
+    Returns:
+    - A Nx2 array containing N keypoint coordinates (row, column) where corners are detected.
+    """
     harris_params = {
         "blockSize": params.HARRIS_BLOCK_SIZE,
         "ksize": params.HARRIS_SOBEL_SIZE,
@@ -30,8 +40,17 @@ def run_harris_detector(img: np.ndarray, visualise: bool = False, print_stats: b
 
 def patch_describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> np.ndarray:
     """
-    Returns a (2r+1)^2xN matrix of image patch vectors based on image img and a 2xN matrix containing the keypoint
-    coordinates. r is the patch "radius".
+    Extracts image patch descriptors centered around keypoints.
+
+    Parameters:
+    - img: The input image.
+    - keypoints: A Nx2 matrix containing N keypoint coordinates (row, column).
+    - r: The patch "radius." The size of each square patch is (2r+1)x(2r+1).
+
+    Returns:
+    - A Nx(2r+1)^2 matrix of image patch vectors. Each row corresponds to a keypoint,
+      and the patch vector is a flattened (2r+1)x(2r+1) square region centered around the keypoint.
+      If keypoints is None, an empty matrix with shape (0, (2r+1)^2) is returned.
     """
     if keypoints is None:
         return np.ndarray((0, (2 * r + 1) ** 2))
@@ -45,10 +64,24 @@ def patch_describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> 
 
     return descriptors
 
+
 def triangulate_points_wrapper(T1: np.ndarray, T2: np.ndarray, K: np.ndarray, points_1: np.ndarray, points_2: np.ndarray):
+    """
+    Triangulates 3D points from corresponding 2D points in two camera views.
+
+    Parameters:
+    - T1: The transformation matrix (4x4) of the first camera.
+    - T2: The transformation matrix (4x4) of the second camera.
+    - K: The camera intrinsic matrix.
+    - points_1: 2xN array of 2D pixel coordinates in the first image.
+    - points_2: 2xN array of corresponding 2D pixel coordinates in the second image.
+
+    Returns:
+    - A 3xN array containing the triangulated 3D coordinates of the points.
+    """
     # dehomogenize transforms
-    T1 = T1[0:3,:]
-    T2 = T2[0:3,:]
+    T1 = T1[0:3, :]
+    T2 = T2[0:3, :]
     M1: np.ndarray = K @ T1
     M2: np.ndarray = K @ T2
     points_3D: np.ndarray = cv2.triangulatePoints(M1, M2, points_1, points_2)
@@ -68,6 +101,7 @@ from scipy.optimize import least_squares
 # point1, point2: Corresponding 2D points in images 1 and 2
 # initial_point: Initial estimate of the 3D point
 
+
 # Function to compute reprojection error
 def reprojection_error(params, K, dist_coeffs, rvec, tvec, point_2d):
     x, y, z = params
@@ -80,6 +114,7 @@ def reprojection_error(params, K, dist_coeffs, rvec, tvec, point_2d):
     error = point_2d - projected_point[0, 0]
 
     return error
+
 
 def test_reprojection_optimisation():
     # Initial estimate of the 3D point

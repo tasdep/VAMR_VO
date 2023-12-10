@@ -73,7 +73,7 @@ POSE_RANSAC_CONFIDENCE = 0.999
 EQUAL_KEYPOINT_THRESHOLD = 2.1
 
 # minimum distance between matches for them to be equal
-MATCH_DISTANCE_THRESHOLD = 1
+MATCH_DISTANCE_THRESHOLD = 300
 
 # threshold for angle between camera poses to add candidate to landmark set
-TRIANGULATION_ANGLE_THRESHOLD = 10 # [deg]
+TRIANGULATION_ANGLE_THRESHOLD = 30 # [deg]

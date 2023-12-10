@@ -194,7 +194,7 @@ if __name__ == "__main__":
         curr_pose: np.ndarray = create_homogeneous_matrix(R, t).flatten()
         camera_pose_history[:, idx] = t.squeeze()
         print(current_state)
-        current_state = update_landmarks(current_state, prev_image, new_image, curr_pose, K)
+        current_state = update_landmarks(current_state, prev_image, new_image, curr_pose, K, print_stats=True)
         print(current_state)
         update_visualization(
             fig,

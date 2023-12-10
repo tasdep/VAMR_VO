@@ -24,23 +24,23 @@ class State:
 
     def __init__(self) -> None:
         # 3xN array for 3D landmark locations
-        self._X: np.ndarray = None
+        self._X: np.ndarray = np.zeros((3, 0))
 
         # 2xN array for 2D keypoint locations corresponding to the landmarks
-        self._P: np.ndarray = None
+        self._P: np.ndarray = np.zeros((2, 0))
 
         # 2xM array for candidate 2D keypoint locations
-        self._C: np.ndarray = None
+        self._C: np.ndarray = np.zeros((2, 0))
 
         # 2xM array for the first observation of each candidate keypoint
-        self._F: np.ndarray = None
+        self._F: np.ndarray = np.zeros((2, 0))
 
         # 16xM array for the pose of the camera corresponding to the first
         # observation of each candidate keypoint. Represents a vecotirzed
         # version of a 4x4 homogenous transformation matrix of the format
         # [R | T]
         # [0 | 1]
-        self._T: np.ndarray = None
+        self._T: np.ndarray = np.zeros((16, 0))
 
     @property
     def X(self):

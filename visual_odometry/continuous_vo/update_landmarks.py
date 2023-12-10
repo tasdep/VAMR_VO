@@ -1,33 +1,63 @@
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 import params.params as params
-import math
 from scipy.spatial.distance import cdist
+import math
 
 from utils.state import State
 from utils.image_processing import run_harris_detector, patch_describe_keypoints, triangulate_points_wrapper
 
 
 def update_landmarks(
-    state: State, img_prev: np.ndarray, img_new: np.ndarray, current_camera_pose: np.ndarray, K: np.ndarray
+    state: State,
+    img_prev: np.ndarray,
+    img_new: np.ndarray,
+    current_camera_pose: np.ndarray,
+    K: np.ndarray,
+    print_stats: bool = False,
 ) -> State:
-    new_C, new_descriptors = get_candidate_keypoints(state, img_new)
-    state = get_updated_keypoints(state, current_camera_pose, img_prev, img_new, new_C, new_descriptors)
-    state = triangulate_candidates(state, current_camera_pose, K)
+    """
+    Update the landmarks in the state by detecting and triangulating new keypoints.
+
+    Parameters:
+    - state: The current state containing landmarks and camera pose information.
+    - img_prev: The image from the previous frame.
+    - img_new: The image from the current frame.
+    - current_camera_pose: 16X1 matrix pose of the camera in the current frame.
+    - K: 3X3 camera intrinsic matrix.
+
+    Returns:
+    - The updated state with new landmarks.
+    """
+    new_C, new_descriptors = get_candidate_keypoints(state, img_new, print_stats=print_stats)
+    state = get_updated_keypoints(state, current_camera_pose, img_prev, img_new, new_C, new_descriptors, print_stats=print_stats)
+    state = triangulate_candidates(state, current_camera_pose, K, print_stats=print_stats)
     return state
 
 
-def get_candidate_keypoints(
-    state: State, img_new: np.ndarray, visualise: bool = False, print_stats: bool = False
-) -> (np.ndarray, np.ndarray):
+def get_candidate_keypoints(state: State, img_new: np.ndarray, print_stats: bool = False) -> (np.ndarray, np.ndarray):
+    """
+    Get candidate keypoints in the new image that are not present in the state and
+    generate descriptors.
+
+    Parameters:
+    - state: The current state containing landmarks and camera pose information.
+    - img_new: The image from the current frame.
+    - visualise: Flag to visualize the keypoints detection.
+    - print_stats: Flag to print statistics about the keypoints detection.
+
+    Returns:
+    - new_C: Mx2 matrix of new candidate keypoints.
+    - new_descriptors: Mx(descriptor length) matrix of descriptors
+                        corresponding to the new candidate keypoints.
+    """
     # get the new keypoints with harris detector
-    keypoints_new = run_harris_detector(img_new, visualise, print_stats)
+    keypoints_new = run_harris_detector(img_new)
     new_C: np.ndarray
     new_descriptors: np.ndarray
+
     # compare each keypoint in P with the new kepoints
     # and only keep those that don't have a match in P
-
     if state.P is not None:
         # distances is an #keypoints_new x #state.P
         distances: np.ndarray = cdist(keypoints_new, state.P.T, metric="cityblock")
@@ -41,6 +71,10 @@ def get_candidate_keypoints(
     else:
         new_C = keypoints_new
 
+    if print_stats:
+        print(
+            f"Returning {new_C.shape[0]} new candidate keypoints. {keypoints_new.shape[0]-new_C.shape[0]} were rejected as being to close to existing landmarks"
+        )
     # calculate the descriptors of the new keypoints
     new_descriptors = patch_describe_keypoints(img_new, new_C, params.DESC_PATCH_RAD)
     return new_C, new_descriptors
@@ -53,16 +87,33 @@ def get_updated_keypoints(
     img_new: np.ndarray,
     new_C: np.ndarray,
     new_descriptors: np.ndarray,
+    print_stats: bool = False,
 ) -> State:
+    """
+    Update the state with the new candidate keypoints detected in the current frame OR update
+    previously tracked candidate keypoints.
+
+    Parameters:
+    - state: The current state containing landmarks and camera pose information.
+    - current_camera_pose: 16X1 pose of the camera in the current frame.
+    - img_prev: The image from the previous frame.
+    - img_new: The image from the current frame.
+    - new_C: MX2 matrix of new candidate keypoints.
+    - new_descriptors: MX(descriptor length) matrix of descriptors
+                        corresponding to the new candidate keypoints.
+
+    Returns:
+    - The updated state with new candidate keypoints.
+    """
+    updated_counter: int = 0
     # F,T will be the same size as new_C
     new_F = np.ndarray(new_C.shape)
     new_T = np.ndarray((new_C.shape[0], 16))
-    old_descriptors = patch_describe_keypoints(img_prev, state.C, params.DESC_PATCH_RAD)
-
+    old_descriptors = patch_describe_keypoints(img_prev, state.C.T, params.DESC_PATCH_RAD)
     # find best match for each new descriptor
     bf: cv2.BFMatcher = cv2.BFMatcher.create(cv2.NORM_L2)
-    matches = bf.match(queryDescriptors=old_descriptors.astype(np.float32), trainDescriptors=new_descriptors.astype(np.float32))
-
+    matches = bf.match(queryDescriptors=new_descriptors.astype(np.float32), trainDescriptors=old_descriptors.astype(np.float32))
+    # note: matches is the length of query descriptors and in that order
     # check matches whether they are close enough to be the same
     for i, candidate in enumerate(new_C):
         try:
@@ -70,46 +121,61 @@ def get_updated_keypoints(
         except IndexError:
             m = None
         if m and m.distance < params.MATCH_DISTANCE_THRESHOLD:
+            updated_counter += 1
             # match => this is an existing candidate, propagate F,T entries
-            new_F[i] = state.F[m.queryIdx]
-            new_T[i] = state.T[m.queryIdx]
+            new_F[i] = state.F.T[m.trainIdx]
+            new_T[i] = state.T.T[m.trainIdx]
         else:
             # No match => this is a new candidate, create new F,T entries
             new_F[i] = new_C[i]
             new_T[i] = current_camera_pose
 
+    if print_stats:
+        print(f"{updated_counter}/{new_C.shape[0]} candidates were updated, {new_C.shape[0]-updated_counter} were added new.")
     # transpose to make them 2 X N
     state.update_candidates(new_C.T, new_F.T, new_T.T)
     return state
 
 
-# TODO to be run after updating candidates
-# this checks if there are any candidates for triangulation and moves them from C,F,T to X,P
-def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K: np.ndarray) -> State:
+def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K: np.ndarray, print_stats: bool = False) -> State:
+    """
+    Triangulate candidate keypoints where the angle between frames is greater than a threshold
+    and update the state with the triangulated landmarks.
+
+    Parameters:
+    - old_state: The current state containing landmarks and camera pose information.
+    - current_camera_pose: 16X1 pose of the camera in the current frame.
+    - K: 3X3 camera intrinsic matrix.
+
+    Returns:
+    - The updated state with newly triangulated landmarks added.
+    """
     angles: np.ndarray = np.zeros((old_state.C.shape[1]))
     # do projections
     for i, (C, F, T) in enumerate(zip(old_state.C.T, old_state.F.T, old_state.T.T)):
-        v_orig = unit_vector_to_pixel_in_world(K, T.reshape((4,4)), F)
-        v_curr = unit_vector_to_pixel_in_world(K, current_camera_pose.reshape((4,4)), C)
+        v_orig = unit_vector_to_pixel_in_world(K, T.reshape((4, 4)), F)
+        v_curr = unit_vector_to_pixel_in_world(K, current_camera_pose.reshape((4, 4)), C)
         angles[i] = angle_between_units(v_orig, v_curr)
 
-    mask = angles > params.TRIANGULATION_ANGLE_THRESHOLD
+    mask = np.rad2deg(angles) > params.TRIANGULATION_ANGLE_THRESHOLD
 
     # get updated C, F, T with ones that don't meet the threshold
-    new_C = old_state.C[:,~mask]
-    new_F = old_state.F[:,~mask]
-    new_T = old_state.T[:,~mask]
+    new_C = old_state.C[:, ~mask]
+    new_F = old_state.F[:, ~mask]
+    new_T = old_state.T[:, ~mask]
 
     # get the to triangulate points
-    tri_C = old_state.C[:,mask]
-    tri_F = old_state.F[:,mask]
-    tri_T = old_state.T[:,mask]
+    tri_C = old_state.C[:, mask]
+    tri_F = old_state.F[:, mask]
+    tri_T = old_state.T[:, mask]
 
     # those above threshold calculate X
-    for i, C, F, T in enumerate(zip(tri_C.T, tri_F.T, tri_T.T)):
-        new_X = triangulate_points_wrapper(T, current_camera_pose, K, F, C)
-        old_state.add_landmark(C, new_X)
+    for i, (C, F, T) in enumerate(zip(tri_C.T, tri_F.T, tri_T.T)):
+        new_X = triangulate_points_wrapper(T.reshape(4,4), current_camera_pose.reshape(4,4), K, F, C)
+        old_state.add_landmark(C.reshape(2,-1), new_X.reshape(3,-1))
 
+    if print_stats:
+        print(f"Of {old_state.C.shape[1]} candidates, {tri_C.shape[1]} were triangulated and added to state.(X/P)")
     # TOODO refine X estimate with non linear optimisation
     # move candidate to X,P in state
     old_state.update_candidates(new_C, new_F, new_T)
@@ -117,6 +183,17 @@ def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K:
 
 
 def unit_vector_to_pixel_in_world(K: np.ndarray, T: np.ndarray, pixel: np.ndarray) -> np.ndarray:
+    """
+    Convert pixel coordinates to unit vector in world coordinates.
+
+    Parameters:
+    - K:  3X3 camera intrinsic matrix
+    - T: (3/4)X4 camera pose transform matrix
+    - pixel: 2X1 pixel coordinates in the image
+
+    Returns:
+    - Unit vector in world coordinates.
+    """
     # extract rot matrix
     R = T[0:3, 0:3]
     # Inverse of the camera matrix
@@ -137,4 +214,14 @@ def unit_vector_to_pixel_in_world(K: np.ndarray, T: np.ndarray, pixel: np.ndarra
 
 
 def angle_between_units(v1: np.ndarray, v2: np.ndarray):
+    """
+    Calculate the angle between two unit vectors. Both in n dimensions.
+
+    Parameters:
+    - v1: First unit vector.
+    - v2: Second unit vector.
+
+    Returns:
+    - Angle between the two unit vectors in radians.
+    """
     return np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
