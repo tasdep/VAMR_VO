@@ -77,3 +77,6 @@ MATCH_DISTANCE_THRESHOLD = 300
 
 # threshold for angle between camera poses to add candidate to landmark set
 TRIANGULATION_ANGLE_THRESHOLD = 30 # [deg]
+
+# number of landmarks to maintain
+NUM_LANDMARKS_GOAL = 500
