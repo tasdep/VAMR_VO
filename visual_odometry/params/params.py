@@ -11,6 +11,15 @@ class Dataset(Enum):
 
 DATASET = Dataset.DATASET4
 
+# turning on profiling disables the visualiser
+# output is a file 'full_run.stats'
+# to visualise use cmd line tool snakeviz "snakeviz *.stats"
+DO_PROFILING = True
+
+# limit the number of frames
+LIMIT_FRAME_COUNT = True
+FRAME_LIMIT = 10
+
 ################################################################
 # Params for 3 - Initialization #
 ################################################################
