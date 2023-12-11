@@ -17,6 +17,7 @@ from continuous_vo.update_landmarks import update_landmarks
 from utils.state import State
 from utils.utils import create_homogeneous_matrix
 
+
 # RED = Candidates
 # GREEN = Landmarks
 def update_visualization(
@@ -62,9 +63,9 @@ def update_visualization(
 
     # Set fixed limits for the axes
     # You need to mess with this depending on the dataset.
-    ax2.set_xlim([-100, 100])
-    ax2.set_ylim([-100, 100])
-    ax2.set_zlim([-100, 100])
+    # ax2.set_xlim([-100, 100])
+    # ax2.set_ylim([-100, 100])
+    # ax2.set_zlim([-100, 100])
 
     # Set a consistent orientation
     ax2.view_init(elev=-80, azim=90)
@@ -76,8 +77,8 @@ def update_visualization(
     ax3.clear()
     ax3.set_title("2D Top-Down Camera Pose History")
     ax3.set_xlabel("X axis")
-    ax3.set_ylabel("Y axis")
-    ax3.plot(camera_pose_history[0, :], camera_pose_history[1, :])
+    ax3.set_ylabel("Z axis")
+    ax3.plot(camera_pose_history[0, :], camera_pose_history[2, :])
 
     plt.draw()
     plt.pause(0.001)  # Necessary for the plot to update
@@ -202,7 +203,7 @@ if __name__ == "__main__":
         curr_pose: np.ndarray = create_homogeneous_matrix(R, t).flatten()
         camera_pose_history[:, idx] = t.squeeze()
         # print(current_state)
-        current_state = update_landmarks(current_state, prev_image, new_image, curr_pose, K, print_stats=True)
+        # current_state = update_landmarks(current_state, prev_image, new_image, curr_pose, K, print_stats=True)
         # print(current_state)
         if not params.DO_PROFILING:
             update_visualization(

@@ -14,7 +14,7 @@ DATASET = Dataset.DATASET4
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'
 # to visualise use cmd line tool snakeviz "snakeviz *.stats"
-DO_PROFILING = True
+DO_PROFILING = False
 
 # limit the number of frames
 LIMIT_FRAME_COUNT = True
@@ -85,7 +85,7 @@ EQUAL_KEYPOINT_THRESHOLD = 2.1
 MATCH_DISTANCE_THRESHOLD = 300
 
 # threshold for angle between camera poses to add candidate to landmark set
-TRIANGULATION_ANGLE_THRESHOLD = 30 # [deg]
+TRIANGULATION_ANGLE_THRESHOLD = 30  # [deg]
 
 # number of landmarks to maintain
 NUM_LANDMARKS_GOAL = 500
