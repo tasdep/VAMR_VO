@@ -9,7 +9,7 @@ class Dataset(Enum):
     DATASET4 = "Ransac exercise"
 
 
-DATASET = Dataset.DATASET1
+DATASET = Dataset.DATASET4
 
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'
@@ -27,7 +27,7 @@ FRAME_LIMIT = 10
 # Whether to use the skip and use the test data that already has
 # correspondences. In order to use this, you must copy the dataset
 # from the RANSAC class exercise into your local_data folder.
-SKIP_BOOTSTRAP = False
+SKIP_BOOTSTRAP = True
 
 # Which frames from the input to use for bootstrapping initial features.
 BOOTSRAP_FRAMES = [0, 3]
