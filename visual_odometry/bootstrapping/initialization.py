@@ -6,7 +6,11 @@ import matplotlib.pyplot as plt
 import params.params as params
 from utils.visualisation import drawCamera
 from utils.state import State
-from utils.image_processing import run_harris_detector,patch_describe_keypoints, triangulate_points_wrapper
+from utils.image_processing import (
+    run_harris_detector,
+    patch_describe_keypoints,
+    triangulate_points_wrapper,
+)
 from utils.utils import create_homogeneous_matrix
 
 
@@ -23,16 +27,20 @@ def initialize_pipeline(
 
     assert img_1.shape == img_2.shape
 
-    keypoints_1 = run_harris_detector(img_1,visualise, print_stats)
-    keypoints_2 = run_harris_detector(img_2,visualise, print_stats)
+    keypoints_1 = run_harris_detector(img_1, visualise, print_stats)
+    keypoints_2 = run_harris_detector(img_2, visualise, print_stats)
 
     # TODO try adaptive thresholding, https://docs.opencv.org/3.4/d7/d4d/tutorial_py_thresholding.html to acheive more uniform keypoints
     # TODO non maxima suppresion to select best n keypoints or just to reduce any crossover
     # TODO try KLT instead of descriptor matching
 
     # calculate patch descriptors
-    descriptors_1: np.ndarray = patch_describe_keypoints(img_1, keypoints_1, params.DESC_PATCH_RAD)
-    descriptors_2: np.ndarray = patch_describe_keypoints(img_2, keypoints_2, params.DESC_PATCH_RAD)
+    descriptors_1: np.ndarray = patch_describe_keypoints(
+        img_1, keypoints_1, params.DESC_PATCH_RAD
+    )
+    descriptors_2: np.ndarray = patch_describe_keypoints(
+        img_2, keypoints_2, params.DESC_PATCH_RAD
+    )
 
     # TODO try ratio test instead of crossCheck
 
@@ -127,10 +135,14 @@ def initialize_pipeline(
         R2[:, 0] *= -1
 
     # find correct combination out of the 4 possible options
-    R_correct, t_correct = disambiguateRelativePose([R1, R2], t, inlier_pts_1, inlier_pts_2, K)
+    R_correct, t_correct = disambiguateRelativePose(
+        [R1, R2], t, inlier_pts_1, inlier_pts_2, K
+    )
     T: np.ndarray = create_homogeneous_matrix(R_correct, t_correct)
     # 3D
-    X: np.ndarray = triangulate_points_wrapper(np.eye(4), T, K, inlier_pts_1.T, inlier_pts_2.T)
+    X: np.ndarray = triangulate_points_wrapper(
+        np.eye(4), T, K, inlier_pts_1.T, inlier_pts_2.T
+    )
     # 2D
     P: np.ndarray = inlier_pts_2.T
 
@@ -145,6 +157,7 @@ def initialize_pipeline(
     state = State()
     state.update_landmarks(X, P)
     return state, create_homogeneous_matrix(R_correct, t_correct)
+
 
 def disambiguateRelativePose(
     rots: np.ndarray,
@@ -182,11 +195,13 @@ def disambiguateRelativePose(
             M2: np.ndarray = K @ np.c_[rot, t]
             P_C1: np.ndarray = cv2.triangulatePoints(M1, M2, points_1.T, points_2.T)
 
-            # project in both cameras
-            P_C2: np.ndarray = np.c_[rot, t] @ P_C1
-
             # dehomegnise
-            P_C1: np.ndarray = P_C1[0:3, :] / P_C1[3, :]
+            P_C1: np.ndarray = P_C1 / P_C1[3, :]
+
+            # Transform 3D points to camera 2's frame of reference.
+            P_C2: np.ndarray = M2 @ P_C1
+
+            P_C1 = P_C1[0:3, :]
 
             num_points_in_front1: int = np.sum(P_C1[2, :] > 0)
             num_points_in_front2: int = np.sum(P_C2[2, :] > 0)
