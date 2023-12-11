@@ -17,6 +17,7 @@ from continuous_vo.update_landmarks import update_landmarks
 from utils.state import State
 from utils.utils import create_homogeneous_matrix
 
+
 # RED = Candidates
 # GREEN = Landmarks
 def update_visualization(
@@ -157,7 +158,7 @@ if __name__ == "__main__":
         initial_state: State
         initial_pose: np.ndarray
         initial_state, initial_pose = initialize_pipeline(
-            images, K, visualise=False, print_stats=False
+            images, K, visualise=True, print_stats=True
         )
 
     ###############################
@@ -202,7 +203,9 @@ if __name__ == "__main__":
         curr_pose: np.ndarray = create_homogeneous_matrix(R, t).flatten()
         camera_pose_history[:, idx] = t.squeeze()
         # print(current_state)
-        current_state = update_landmarks(current_state, prev_image, new_image, curr_pose, K, print_stats=True)
+        current_state = update_landmarks(
+            current_state, prev_image, new_image, curr_pose, K, print_stats=True
+        )
         # print(current_state)
         if not params.DO_PROFILING:
             update_visualization(

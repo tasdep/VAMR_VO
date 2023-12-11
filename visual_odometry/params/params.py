@@ -9,7 +9,7 @@ class Dataset(Enum):
     DATASET4 = "Ransac exercise"
 
 
-DATASET = Dataset.DATASET4
+DATASET = Dataset.DATASET1
 
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'
@@ -27,7 +27,7 @@ FRAME_LIMIT = 10
 # Whether to use the skip and use the test data that already has
 # correspondences. In order to use this, you must copy the dataset
 # from the RANSAC class exercise into your local_data folder.
-SKIP_BOOTSTRAP = True
+SKIP_BOOTSTRAP = False
 
 # Which frames from the input to use for bootstrapping initial features.
 BOOTSRAP_FRAMES = [0, 3]
@@ -85,7 +85,7 @@ EQUAL_KEYPOINT_THRESHOLD = 2.1
 MATCH_DISTANCE_THRESHOLD = 300
 
 # threshold for angle between camera poses to add candidate to landmark set
-TRIANGULATION_ANGLE_THRESHOLD = 30 # [deg]
+TRIANGULATION_ANGLE_THRESHOLD = 30  # [deg]
 
 # number of landmarks to maintain
 NUM_LANDMARKS_GOAL = 500
