@@ -77,7 +77,7 @@ def triangulate_points_wrapper(T1: np.ndarray, T2: np.ndarray, K: np.ndarray, po
     - points_2: 2xN array of corresponding 2D pixel coordinates in the second image.
 
     Returns:
-    - A 3xN array containing the triangulated 3D coordinates of the points.
+    - A 3xN array containing the triangulated 3D coordinates of the points, IN THE WORLD FRAME.
     """
     # dehomogenize transforms
     T1 = T1[0:3, :]

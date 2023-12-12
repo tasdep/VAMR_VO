@@ -20,6 +20,7 @@ def initialize_pipeline(
     K: np.ndarray,
     visualise: bool = False,
     print_stats: bool = False,
+    prematached_keypoints: list[np.ndarray] = None
 ) -> State:
     # 2 frames from dataset and params
     img_1: np.ndarray = input_images[params.BOOTSRAP_FRAMES[0], ...]
@@ -27,90 +28,98 @@ def initialize_pipeline(
 
     assert img_1.shape == img_2.shape
 
-    keypoints_1 = run_harris_detector(img_1, visualise, print_stats)
-    keypoints_2 = run_harris_detector(img_2, visualise, print_stats)
+    if prematached_keypoints is None:
+        # normal workflow of detecting keypoints and matching between images
+        keypoints_1 = run_harris_detector(img_1, visualise, print_stats)
+        keypoints_2 = run_harris_detector(img_2, visualise, print_stats)
 
-    # TODO try adaptive thresholding, https://docs.opencv.org/3.4/d7/d4d/tutorial_py_thresholding.html to acheive more uniform keypoints
-    # TODO non maxima suppresion to select best n keypoints or just to reduce any crossover
-    # TODO try KLT instead of descriptor matching
+        # TODO try adaptive thresholding, https://docs.opencv.org/3.4/d7/d4d/tutorial_py_thresholding.html to acheive more uniform keypoints
+        # TODO non maxima suppresion to select best n keypoints or just to reduce any crossover
+        # TODO try KLT instead of descriptor matching
 
-    # calculate patch descriptors
-    descriptors_1: np.ndarray = patch_describe_keypoints(
-        img_1, keypoints_1, params.DESC_PATCH_RAD
-    )
-    descriptors_2: np.ndarray = patch_describe_keypoints(
-        img_2, keypoints_2, params.DESC_PATCH_RAD
-    )
-
-    # TODO try ratio test instead of crossCheck
-
-    # match the descriptors between images
-    # cross check only returns matches where the nearest keypoint is consistent between images
-    bf: cv2.BFMatcher = cv2.BFMatcher.create(cv2.NORM_L2, crossCheck=True)
-    matches = bf.match(
-        queryDescriptors=descriptors_1.astype(np.float32),
-        trainDescriptors=descriptors_2.astype(np.float32),
-    )
-
-    if print_stats:
-        print(f"{len(matches)=}")
-
-    # Create keypoint objects from numpy arrays
-    keypoints1_lst: list[cv2.KeyPoint] = [
-        cv2.KeyPoint(float(x), float(y), 1) for y, x in keypoints_1
-    ]
-    keypoints2_lst: list[cv2.KeyPoint] = [
-        cv2.KeyPoint(float(x), float(y), 1) for y, x in keypoints_2
-    ]
-
-    if visualise:
-        img3 = cv2.drawMatches(
-            img_1,
-            keypoints1_lst,
-            img_2,
-            keypoints2_lst,
-            matches,
-            None,
-            flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
+        # calculate patch descriptors
+        descriptors_1: np.ndarray = patch_describe_keypoints(
+            img_1, keypoints_1, params.DESC_PATCH_RAD
         )
-        plt.imshow(img3)
-        plt.show()
+        descriptors_2: np.ndarray = patch_describe_keypoints(
+            img_2, keypoints_2, params.DESC_PATCH_RAD
+        )
 
-    # get matched keypoints to estimate fundamental matrix
-    matched_pts_1 = np.float32([keypoints_1[m.queryIdx] for m in matches]).reshape(
-        -1, 2
-    )
-    matched_pts_2 = np.float32([keypoints_2[m.trainIdx] for m in matches]).reshape(
-        -1, 2
-    )
+        # TODO try ratio test instead of crossCheck
 
+        # match the descriptors between images
+        # cross check only returns matches where the nearest keypoint is consistent between images
+        bf: cv2.BFMatcher = cv2.BFMatcher.create(cv2.NORM_L2, crossCheck=True)
+        matches = bf.match(
+            queryDescriptors=descriptors_1.astype(np.float32),
+            trainDescriptors=descriptors_2.astype(np.float32),
+        )
+
+        if print_stats:
+            print(f"{len(matches)=}")
+
+        # Create keypoint objects from numpy arrays
+        keypoints1_lst: list[cv2.KeyPoint] = [
+            cv2.KeyPoint(float(x), float(y), 1) for y, x in keypoints_1
+        ]
+        keypoints2_lst: list[cv2.KeyPoint] = [
+            cv2.KeyPoint(float(x), float(y), 1) for y, x in keypoints_2
+        ]
+
+        if visualise:
+            img3 = cv2.drawMatches(
+                img_1,
+                keypoints1_lst,
+                img_2,
+                keypoints2_lst,
+                matches,
+                None,
+                flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
+            )
+            plt.imshow(img3)
+            plt.show()
+
+        # get matched keypoints to estimate fundamental matrix
+        matched_pts_1 = np.float32([keypoints_1[m.queryIdx] for m in matches]).reshape(
+            -1, 2
+        )
+        matched_pts_2 = np.float32([keypoints_2[m.trainIdx] for m in matches]).reshape(
+            -1, 2
+        )
+    else: 
+        # load in the matched points
+        matched_pts_1 = np.float32(prematached_keypoints[0])
+        matched_pts_2 = np.float32(prematached_keypoints[1])
+        print(f"{matched_pts_1.shape=}")
+        print(f"{matched_pts_2.shape=}")
+        
     fundamental: np.ndarray
     mask: np.ndarray
     fundamental, mask = cv2.findFundamentalMat(
         matched_pts_1,
-        matched_pts_2,
-        cv2.FM_RANSAC,
-        params.RANSAC_REPROJ_THRESH,
-        params.RANSAC_CONFIDENCE,
+        matched_pts_2
+        # cv2.FM_RANSAC,
+        # params.RANSAC_REPROJ_THRESH,
+        # params.RANSAC_CONFIDENCE,
     )
 
-    # visualise inlier matches after RANSAC
-    inlier_matches = [match for i, match in enumerate(matches) if mask[i] == 1]
-    if print_stats:
-        print(f"{len(inlier_matches)=}")
+    # # visualise inlier matches after RANSAC
+    # inlier_matches = [match for i, match in enumerate(matches) if mask[i] == 1]
+    # if print_stats:
+    #     print(f"{len(inlier_matches)=}")
 
-    if visualise:
-        img3 = cv2.drawMatches(
-            img_1,
-            keypoints1_lst,
-            img_2,
-            keypoints2_lst,
-            inlier_matches,
-            None,
-            flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
-        )
-        plt.imshow(img3)
-        plt.show()
+    # if visualise:
+    #     img3 = cv2.drawMatches(
+    #         img_1,
+    #         keypoints1_lst,
+    #         img_2,
+    #         keypoints2_lst,
+    #         inlier_matches,
+    #         None,
+    #         flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
+    #     )
+    #     plt.imshow(img3)
+    #     plt.show()
 
     # find essential matrix
     essential: np.ndarray = K.T @ fundamental @ K
@@ -199,7 +208,8 @@ def disambiguateRelativePose(
             P_C1: np.ndarray = P_C1 / P_C1[3, :]
 
             # Transform 3D points to camera 2's frame of reference.
-            P_C2: np.ndarray = M2 @ P_C1
+            # not sure this is correct, I don't think we want a K dependence here
+            P_C2: np.ndarray = np.c_[rot, t] @ P_C1
 
             P_C1 = P_C1[0:3, :]
 

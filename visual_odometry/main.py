@@ -158,7 +158,7 @@ if __name__ == "__main__":
         initial_state: State
         initial_pose: np.ndarray
         initial_state, initial_pose = initialize_pipeline(
-            images, K, visualise=True, print_stats=True
+            images, K, visualise=False, print_stats=False
         )
 
     ###############################

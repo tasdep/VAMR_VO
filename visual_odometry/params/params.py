@@ -14,11 +14,11 @@ DATASET = Dataset.DATASET1
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'
 # to visualise use cmd line tool snakeviz "snakeviz *.stats"
-DO_PROFILING = True
+DO_PROFILING = False
 
 # limit the number of frames
 LIMIT_FRAME_COUNT = True
-FRAME_LIMIT = 10
+FRAME_LIMIT = 100
 
 ################################################################
 # Params for 3 - Initialization #
@@ -81,7 +81,7 @@ POSE_RANSAC_CONFIDENCE = 0.999
 # value is a pixel radius
 EQUAL_KEYPOINT_THRESHOLD = 2.1
 
-# minimum distance between matches for them to be equal
+# minimum 'distance' between matches for them to be equal
 MATCH_DISTANCE_THRESHOLD = 300
 
 # threshold for angle between camera poses to add candidate to landmark set

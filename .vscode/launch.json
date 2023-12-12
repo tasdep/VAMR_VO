@@ -12,6 +12,14 @@
             "cwd": "${workspaceFolder}/visual_odometry",
             "console": "integratedTerminal",
             "justMyCode": true
-        }
+        },
+        {
+            "name": "test_initialization",
+            "type": "python",
+            "request": "launch",
+            "module": "bootstrapping.test_intialization",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/visual_odometry"
+        },
     ]
 }
