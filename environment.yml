@@ -6,3 +6,4 @@ dependencies:
   - numpy
   - opencv
   - matplotlib==3.5.3
+  - scipy
