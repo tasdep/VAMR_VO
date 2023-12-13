@@ -150,13 +150,16 @@ def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K:
     Returns:
     - The updated state with newly triangulated landmarks added.
     """
-    if old_state.P.shape[1] >= params.NUM_LANDMARKS_GOAL:
+    current_landmarks: int = old_state.P.shape[1]
+    if current_landmarks >= params.NUM_LANDMARKS_GOAL:
         if print_stats:
-            print(f"Number of landmarks currently tracked is {old_state.P.shape[1]}/{params.NUM_LANDMARKS_GOAL}. Not adding more.")
+            print(
+                f"Number of landmarks currently tracked is {old_state.P.shape[1]}/{params.NUM_LANDMARKS_GOAL}. Not adding more."
+            )
         return old_state
     else:
-        num_to_add: int = params.NUM_LANDMARKS_GOAL - old_state.P.shape[1]
-    
+        num_to_add: int = params.NUM_LANDMARKS_GOAL - current_landmarks
+
     angles: np.ndarray = np.zeros((old_state.C.shape[1]))
     # do projections
     for i, (C, F, T) in enumerate(zip(old_state.C.T, old_state.F.T, old_state.T.T)):
@@ -166,7 +169,7 @@ def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K:
 
     # assumption: larger angle => better landmark to start tracking
     # take the num_to_add largest angles, set the rest to zero
-    small_indices = np.argsort(angles)[:(angles.shape[0]-num_to_add)]
+    small_indices = np.argsort(angles)[: (angles.shape[0] - num_to_add)]
     angles[small_indices] = 0
     # now filter to make sure we only have valid ones
     mask = np.rad2deg(angles) > params.TRIANGULATION_ANGLE_THRESHOLD
@@ -183,14 +186,16 @@ def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K:
 
     # those above threshold calculate X
     for i, (C, F, T) in enumerate(zip(tri_C.T, tri_F.T, tri_T.T)):
-        new_X = triangulate_points_wrapper(T.reshape(4,4), current_camera_pose.reshape(4,4), K, F, C)
-        old_state.add_landmark(C.reshape(2,-1), new_X.reshape(3,-1))
+        new_X = triangulate_points_wrapper(T.reshape(4, 4), current_camera_pose.reshape(4, 4), K, F, C)
+        if new_X[2] < 0:
+            print("points triangulated behind camera in update landmarks!!!")
+        old_state.add_landmark(C.reshape(2, -1), new_X.reshape(3, -1))
 
     if print_stats:
         print(f"Of {old_state.C.shape[1]} candidates, {tri_C.shape[1]} were triangulated and added to state.(X/P)")
         print(f"Number of landmarks now tracked is {old_state.P.shape[1]}/{params.NUM_LANDMARKS_GOAL}.")
 
-    # TOODO refine X estimate with non linear optimisation
+    # TODO refine X estimate with non linear optimisation
     # move candidate to X,P in state
     old_state.update_candidates(new_C, new_F, new_T)
     return old_state

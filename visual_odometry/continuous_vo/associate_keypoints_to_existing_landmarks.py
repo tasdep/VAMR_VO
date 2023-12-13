@@ -45,7 +45,7 @@ def track_and_update(
     # Track the keypoints in the new image, note we transpose the images.
     # new_keypoints.shape = Nx1x2
     new_keypoints, status, _ = cv2.calcOpticalFlowPyrLK(
-        prev_image.T, new_image.T, prev_keypoints, None, **lk_params
+        prev_image, new_image, prev_keypoints, None, **lk_params
     )
 
     # Filter out the keypoints for which tracking was successful
@@ -88,6 +88,9 @@ def track_and_update(
 
     # Update keypoints in the state
     # Transform P back to 2xN format
+    if inlier_3D[2, :].min() < 0:
+        n = (inlier_3D[2,:]<0).size
+        print(f"{n} points triangulated behind camera during track and update!!!")
     state.update_landmarks(inlier_3D, inlier_new.T)
 
 
@@ -116,9 +119,9 @@ def visualize_keypoint_movement_with_status(
 
     # Iterate through keypoints and status
     for p1, p2, s in zip(prev_keypoints, new_keypoints, status):
-        # Convert to integer tuples and convert to x,y (swap axes)
-        p1 = (int(p1[1]), int(p1[0]))
-        p2 = (int(p2[1]), int(p2[0]))
+        # Convert to integer tuples 
+        p1 = (int(p1[0]), int(p1[1]))
+        p2 = (int(p2[0]), int(p2[1]))
 
         if s[0] == 1:  # Successfully tracked
             cv2.circle(

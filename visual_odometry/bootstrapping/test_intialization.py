@@ -55,10 +55,12 @@ def ex6_triangulation_test():
     images = np.array([img_1, img_2, img_2, img_2])
     print(f"{images.shape=}")
     
-    initial_state: State = initialize_pipeline(images, K, print_stats=True, visualise=True,prematached_keypoints=[p1.T,p2.T])
+    # initial_state: State = initialize_pipeline(images, K, print_stats=True, visualise=True,prematached_keypoints=[p1.T,p2.T])
+    initial_state: State = initialize_pipeline(images, K, print_stats=True, visualise=True)
 
     pass
     
 if __name__ == "__main__":
-    ex6_triangulation_test()
+    # ex6_triangulation_test()
+    shared_data_test()
     print("Done")

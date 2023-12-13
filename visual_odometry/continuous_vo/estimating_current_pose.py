@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from utils.state import State
 from params import params as params
-from utils.draw_camera import drawCamera
+from utils.visualisation import drawCamera
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure

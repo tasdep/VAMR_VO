@@ -14,17 +14,19 @@ def run_harris_detector(img: np.ndarray, visualise: bool = False, print_stats: b
     - print_stats: Flag to print statistics about the detected keypoints.
 
     Returns:
-    - A Nx2 array containing N keypoint coordinates (row, column) where corners are detected.
+    - A Nx2 array containing N keypoint coordinates (column, row) or (x,y) where corners are detected.
     """
-    harris_params = {
-        "blockSize": params.HARRIS_BLOCK_SIZE,
-        "ksize": params.HARRIS_SOBEL_SIZE,
-        "k": params.HARRIS_K,
+    detector_params = {
+        "maxCorners": 500,
+        "qualityLevel": 0.01,
+        "minDistance": 10,
+        "blockSize": 3,
     }
-    corners: np.ndarray = cv2.cornerHarris(img, **harris_params)
 
-    # extract keypoints from corner detector
-    keypoints: np.ndarray = np.argwhere(corners > params.KEYPOINT_THRESHOLD * corners.max())
+    # cv2.goodfeaturestotrackwithquality also returns the quality scores of the detected corners
+    keypoints = cv2.goodFeaturesToTrack(img, **detector_params)
+
+    keypoints = keypoints.reshape((-1,2))
 
     if print_stats:
         print(f"{keypoints.shape=}")
@@ -32,7 +34,7 @@ def run_harris_detector(img: np.ndarray, visualise: bool = False, print_stats: b
     if visualise:
         fig, axs = plt.subplots(1, 1)
         axs.imshow(img, cmap="gray")
-        axs.plot(keypoints[:, 1], keypoints[:, 0], "rx")
+        axs.plot(keypoints[:, 0], keypoints[:, 1], "rx")
         plt.show()
 
     return keypoints
@@ -44,7 +46,7 @@ def patch_describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> 
 
     Parameters:
     - img: The input image.
-    - keypoints: A Nx2 matrix containing N keypoint coordinates (row, column).
+    - keypoints: A Nx2 matrix containing N keypoint coordinates (column, row).
     - r: The patch "radius." The size of each square patch is (2r+1)x(2r+1).
 
     Returns:
@@ -60,7 +62,7 @@ def patch_describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> 
 
     for i in range(N):
         kp: np.ndarray = keypoints[i, :].astype(int) + r
-        descriptors[i, :] = padded[(kp[0] - r) : (kp[0] + r + 1), (kp[1] - r) : (kp[1] + r + 1)].flatten()
+        descriptors[i, :] = padded[(kp[1] - r) : (kp[1] + r + 1), (kp[0] - r) : (kp[0] + r + 1)].flatten()
 
     return descriptors
 
