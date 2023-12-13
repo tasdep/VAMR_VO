@@ -9,7 +9,7 @@ class Dataset(Enum):
     DATASET4 = "Ransac exercise"
 
 
-DATASET = Dataset.DATASET4
+DATASET = Dataset.DATASET1
 
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'

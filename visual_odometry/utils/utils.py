@@ -16,3 +16,6 @@ def create_homogeneous_matrix(R: np.ndarray, t: np.ndarray):
     homogeneous_matrix[:3, :3] = R
     homogeneous_matrix[:3, 3] = t.flatten()
     return homogeneous_matrix
+
+def get_camera_pos_in_world(R: np.ndarray, t: np.ndarray) ->np.ndarray:
+    return -R.T @ t
