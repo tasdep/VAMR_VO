@@ -15,7 +15,7 @@ from continuous_vo.estimating_current_pose import estimating_current_pose
 from continuous_vo.update_landmarks import update_landmarks
 
 from utils.state import State
-from utils.utils import create_homogeneous_matrix
+from utils.utils import create_homogeneous_matrix, get_camera_pos_in_world
 from utils.visualisation import drawCamera
 
 
