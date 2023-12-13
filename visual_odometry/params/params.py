@@ -31,7 +31,7 @@ FRAME_LIMIT = 100
 # Whether to use the skip and use the test data that already has
 # correspondences. In order to use this, you must copy the dataset
 # from the RANSAC class exercise into your local_data folder.
-SKIP_BOOTSTRAP = False
+SKIP_BOOTSTRAP = True
 
 # Which frames from the input to use for bootstrapping initial features.
 BOOTSRAP_FRAMES = [0, 3]

@@ -16,6 +16,7 @@ from continuous_vo.update_landmarks import update_landmarks
 
 from utils.state import State
 from utils.utils import create_homogeneous_matrix
+from utils.visualisation import drawCamera
 
 
 # RED = Candidates
@@ -57,12 +58,13 @@ def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_
     for i in range(3):
         direction = R.T[:, i]
         ax2.quiver(*(-R.T @ t).ravel(), *direction, length=cam_length, color=["r", "g", "b"][i])
+    ax2.axis("equal")
 
     # Set fixed limits for the axes
     # You need to mess with this depending on the dataset.
-    ax2.set_xlim([-100, 100])
-    ax2.set_ylim([-100, 100])
-    ax2.set_zlim([-100, 100])
+    # ax2.set_xlim([-100, 100])
+    # ax2.set_ylim([-100, 100])
+    # ax2.set_zlim([-100, 100])
 
 
 
