@@ -21,9 +21,7 @@ from utils.visualisation import drawCamera
 
 # RED = Candidates
 # GREEN = Landmarks
-def update_visualization(
-    fig, ax1, ax2, ax3, current_image, state, R, t, camera_pose_history
-):
+def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_pose_history):
     # Update Plot 1: Current image with keypoints
     ax1.clear()
     ax1.set_title("Current Image with Keypoints")
@@ -32,7 +30,7 @@ def update_visualization(
         p = p.astype(int)
         cv2.circle(
             img_with_keypoints,
-            (p[1], p[0]),
+            (p[0], p[1]),
             radius=3,
             color=(0, 255, 0),
             thickness=-1,
@@ -42,7 +40,7 @@ def update_visualization(
             c = c.astype(int)
             cv2.circle(
                 img_with_keypoints,
-                (c[1], c[0]),
+                (c[0], c[1]),
                 radius=3,
                 color=(255, 0, 0),
                 thickness=-1,
@@ -55,12 +53,12 @@ def update_visualization(
     ax2.set_xlabel("X axis")
     ax2.set_ylabel("Y axis")
     ax2.set_zlabel("Z axis")
-    print(state.X.shape)
     ax2.scatter(state.X[0, :], state.X[1, :], state.X[2, :])
+    cam_length = 2.0
     drawCamera(
         ax2,
-        t.ravel(),
-        R,
+        (-R.T @ t).ravel(),
+        R.T,
         length_scale=10,
         head_size=10,
         equal_axis=False,
@@ -74,8 +72,7 @@ def update_visualization(
     # ax2.set_ylim([-100, 100])
     # ax2.set_zlim([-100, 100])
 
-    # Set a consistent orientation
-    ax2.view_init(elev=-80, azim=90)
+
 
     # Add a marker for the origin
     ax2.scatter([0], [0], [0], color="k", marker="o")  # Black dot at the origin
@@ -86,10 +83,15 @@ def update_visualization(
     ax3.set_xlabel("X axis")
     ax3.set_ylabel("Z axis")
     ax3.plot(camera_pose_history[0, :], camera_pose_history[2, :])
+    ax3.set_aspect("equal")
+    ax3.autoscale(enable=True, axis="both")
 
     plt.draw()
     plt.pause(0.001)  # Necessary for the plot to update
-    plt.waitforbuttonpress()  # Wait for keyboard input
+    if params.WAIT_ARROW:
+        fig.canvas.start_event_loop(timeout=-1)
+    else:
+        plt.waitforbuttonpress()  # Wait for keyboard input
 
 
 def image_generator(folder_path):
@@ -121,9 +123,7 @@ if __name__ == "__main__":
         case params.Dataset.DATASET1:
             folder_path = (base_path / "../shared_data/parking/images").resolve()
             calib_path = (base_path / "../shared_data/parking/K.txt").resolve()
-            K: np.ndarray = np.genfromtxt(
-                calib_path, delimiter=",", dtype=float
-            )  # calibration matrix[3x3]
+            K: np.ndarray = np.genfromtxt(calib_path, delimiter=",", dtype=float)  # calibration matrix[3x3]
             pass
         case params.Dataset.DATASET2:
             pass
@@ -132,25 +132,17 @@ if __name__ == "__main__":
         case params.Dataset.DATASET4:
             folder_path = (base_path / "../local_data/test_data").resolve()
             calib_path = (base_path / "../local_data/test_data/K.txt").resolve()
-            K: np.ndarray = np.genfromtxt(
-                calib_path, delimiter=" ", dtype=float
-            )  # calibration matrix[3x3]
+            K: np.ndarray = np.genfromtxt(calib_path, delimiter=" ", dtype=float)  # calibration matrix[3x3]
 
     ###############################
     # Bootstrap Initial Landmarks #
     ###############################
     if params.SKIP_BOOTSTRAP:
         if params.DATASET != params.Dataset.DATASET4:
-            print(
-                "Error: Must use Dataset 4 (local_data from ransac ex) for skipping initialization"
-            )
+            print("Error: Must use Dataset 4 (local_data from ransac ex) for skipping initialization")
             os._exit()
-        keypoints = np.loadtxt(
-            (base_path / "../local_data/test_data/keypoints.txt").resolve()
-        ).T
-        p_W_landmarks = np.loadtxt(
-            (base_path / "../local_data/test_data/p_W_landmarks.txt").resolve()
-        ).T
+        keypoints = np.loadtxt((base_path / "../local_data/test_data/keypoints.txt").resolve()).T
+        p_W_landmarks = np.loadtxt((base_path / "../local_data/test_data/p_W_landmarks.txt").resolve()).T
         initial_state = State()
         initial_state.update_landmarks(p_W_landmarks, keypoints)
 
@@ -164,9 +156,7 @@ if __name__ == "__main__":
 
         initial_state: State
         initial_pose: np.ndarray
-        initial_state, initial_pose = initialize_pipeline(
-            images, K, visualise=True, print_stats=True
-        )
+        initial_state, initial_pose = initialize_pipeline(images, K, visualise=False, print_stats=True)
 
     ###############################
     # Continuous Visual Odometry  #
@@ -184,6 +174,21 @@ if __name__ == "__main__":
         ax1 = fig.add_subplot(gs[0, :])
         ax2 = fig.add_subplot(gs[1, 0], projection="3d")
         ax3 = fig.add_subplot(gs[1, 1])
+        # Set a consistent orientation
+        ax2.view_init(elev=-70, azim=-90)
+        # setup plot event
+        if params.WAIT_ARROW:
+
+            def on_key(event):
+                if event.key == "right":
+                    print("Right arrow key pressed.")
+                    fig.canvas.stop_event_loop()
+                elif event.key == "escape":
+                    print("Esc key pressed.")
+                    plt.close("all")
+                    exit(0)
+
+            plt.connect("key_press_event", on_key)
 
     current_state: State = initial_state
     prev_image: np.ndarray = None
@@ -195,7 +200,7 @@ if __name__ == "__main__":
     for idx, filename, new_image, color_image in generator:
         if params.LIMIT_FRAME_COUNT and idx > params.FRAME_LIMIT:
             break
-        print(f"Analyzing image {idx}")
+        print(f"MAIN LOOP: Analyzing image {idx}")
         if prev_image is None:
             prev_image = new_image
             continue
@@ -206,12 +211,14 @@ if __name__ == "__main__":
             visualize=False,
             visualizer_img=color_image,
         )
+        # fig_cp, ax_cp = plt.subplots()
+        # figure=fig_cp, image=color_image
         R, t = estimating_current_pose(current_state, K, visualization=False)
         curr_pose: np.ndarray = create_homogeneous_matrix(R, t).flatten()
-        camera_pose_history[:, idx] = t.squeeze()
-        # print(current_state)
-        # current_state = update_landmarks(current_state, prev_image, new_image, curr_pose, K, print_stats=True)
-        # print(current_state)
+        # convert t to world frame for plotting
+        t_W = -R.T @ t
+        camera_pose_history[:, idx] = t_W.squeeze()
+        current_state = update_landmarks(current_state, prev_image, new_image, curr_pose, K, print_stats=True)
         if not params.DO_PROFILING:
             update_visualization(
                 fig,

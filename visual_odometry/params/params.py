@@ -16,9 +16,13 @@ DATASET = Dataset.DATASET4
 # to visualise use cmd line tool snakeviz "snakeviz *.stats"
 DO_PROFILING = False
 
+# wait for arrow key to advance to next frame
+WAIT_ARROW = True
+
+
 # limit the number of frames
 LIMIT_FRAME_COUNT = True
-FRAME_LIMIT = 10
+FRAME_LIMIT = 100
 
 ################################################################
 # Params for 3 - Initialization #
@@ -27,7 +31,7 @@ FRAME_LIMIT = 10
 # Whether to use the skip and use the test data that already has
 # correspondences. In order to use this, you must copy the dataset
 # from the RANSAC class exercise into your local_data folder.
-SKIP_BOOTSTRAP = True
+SKIP_BOOTSTRAP = False
 
 # Which frames from the input to use for bootstrapping initial features.
 BOOTSRAP_FRAMES = [0, 3]
@@ -81,11 +85,11 @@ POSE_RANSAC_CONFIDENCE = 0.999
 # value is a pixel radius
 EQUAL_KEYPOINT_THRESHOLD = 2.1
 
-# minimum distance between matches for them to be equal
+# minimum 'distance' between matches for them to be equal
 MATCH_DISTANCE_THRESHOLD = 300
 
 # threshold for angle between camera poses to add candidate to landmark set
-TRIANGULATION_ANGLE_THRESHOLD = 30  # [deg]
+TRIANGULATION_ANGLE_THRESHOLD = 20  # [deg]
 
 # number of landmarks to maintain
-NUM_LANDMARKS_GOAL = 500
+NUM_LANDMARKS_GOAL = 400

@@ -14,17 +14,19 @@ def run_harris_detector(img: np.ndarray, visualise: bool = False, print_stats: b
     - print_stats: Flag to print statistics about the detected keypoints.
 
     Returns:
-    - A Nx2 array containing N keypoint coordinates (row, column) where corners are detected.
+    - A Nx2 array containing N keypoint coordinates (column, row) or (x,y) where corners are detected.
     """
-    harris_params = {
-        "blockSize": params.HARRIS_BLOCK_SIZE,
-        "ksize": params.HARRIS_SOBEL_SIZE,
-        "k": params.HARRIS_K,
+    detector_params = {
+        "maxCorners": 500,
+        "qualityLevel": 0.01,
+        "minDistance": 10,
+        "blockSize": 3,
     }
-    corners: np.ndarray = cv2.cornerHarris(img, **harris_params)
 
-    # extract keypoints from corner detector
-    keypoints: np.ndarray = np.argwhere(corners > params.KEYPOINT_THRESHOLD * corners.max())
+    # cv2.goodfeaturestotrackwithquality also returns the quality scores of the detected corners
+    keypoints = cv2.goodFeaturesToTrack(img, **detector_params)
+
+    keypoints = keypoints.reshape((-1, 2))
 
     if print_stats:
         print(f"{keypoints.shape=}")
@@ -32,7 +34,7 @@ def run_harris_detector(img: np.ndarray, visualise: bool = False, print_stats: b
     if visualise:
         fig, axs = plt.subplots(1, 1)
         axs.imshow(img, cmap="gray")
-        axs.plot(keypoints[:, 1], keypoints[:, 0], "rx")
+        axs.plot(keypoints[:, 0], keypoints[:, 1], "rx")
         plt.show()
 
     return keypoints
@@ -44,7 +46,7 @@ def patch_describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> 
 
     Parameters:
     - img: The input image.
-    - keypoints: A Nx2 matrix containing N keypoint coordinates (row, column).
+    - keypoints: A Nx2 matrix containing N keypoint coordinates (column, row).
     - r: The patch "radius." The size of each square patch is (2r+1)x(2r+1).
 
     Returns:
@@ -60,12 +62,12 @@ def patch_describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> 
 
     for i in range(N):
         kp: np.ndarray = keypoints[i, :].astype(int) + r
-        descriptors[i, :] = padded[(kp[0] - r) : (kp[0] + r + 1), (kp[1] - r) : (kp[1] + r + 1)].flatten()
+        descriptors[i, :] = padded[(kp[1] - r) : (kp[1] + r + 1), (kp[0] - r) : (kp[0] + r + 1)].flatten()
 
     return descriptors
 
 
-def triangulate_points_wrapper(T1: np.ndarray, T2: np.ndarray, K: np.ndarray, points_1: np.ndarray, points_2: np.ndarray):
+def triangulate_points_wrapper(T1: np.ndarray, T2: np.ndarray, K: np.ndarray, points_1: np.ndarray, points_2: np.ndarray)-> (np.ndarray, np.ndarray):
     """
     Triangulates 3D points from corresponding 2D points in two camera views.
 
@@ -77,17 +79,31 @@ def triangulate_points_wrapper(T1: np.ndarray, T2: np.ndarray, K: np.ndarray, po
     - points_2: 2xN array of corresponding 2D pixel coordinates in the second image.
 
     Returns:
-    - A 3xN array containing the triangulated 3D coordinates of the points.
+    - A 3xN array containing the triangulated 3D coordinates of the points, IN THE WORLD FRAME.
+    - A boolean mask array (N) corresponding to the filtered points, False entry if point removed
     """
     # dehomogenize transforms
     T1 = T1[0:3, :]
     T2 = T2[0:3, :]
     M1: np.ndarray = K @ T1
     M2: np.ndarray = K @ T2
+    # points in world frame
     points_3D: np.ndarray = cv2.triangulatePoints(M1, M2, points_1, points_2)
+
+    # dehomogenise to form x,y,z,1
+    points_3D: np.ndarray = points_3D / points_3D[3, :]
+
+    # get points in different camera frames
+    P_C1: np.ndarray = T1 @ points_3D
+    P_C2: np.ndarray = T2 @ points_3D
+
+    # filter world points to remove points that are behind either camera
+    mask: np.ndarray = np.logical_and(P_C1[2, :] > 0, P_C2[2, :] > 0)
+    num_points_behind_camera: int = mask.size - np.sum(mask)
+    # print(f"{num_points_behind_camera} points filtered from behind camera.")
+    points_3D = points_3D[0:3, mask]
     # dehomgenize
-    points_3D: np.ndarray = points_3D[0:3, :] / points_3D[3, :]
-    return points_3D
+    return points_3D, mask
 
 
 # IDEA FOR NON LINEAR REPROJECTION OPTIMISATION

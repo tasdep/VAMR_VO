@@ -28,8 +28,8 @@ def read_images_into_array(images_directory: str, n: int) -> np.ndarray:
 
     return numpy_array
 
-if __name__ == "__main__":
-    # Specify the path to the directory containing your images
+def shared_data_test():
+        # Specify the path to the directory containing your images
     images_directory: str = "..\shared_data\parking\images"
 
 
@@ -39,3 +39,28 @@ if __name__ == "__main__":
     
     # cv2.imshow("temp", images[0,...])
     initial_state: State = initialize_pipeline(images, K, print_stats=True, visualise=True)
+
+def ex6_triangulation_test():
+    # load exercise images
+    img_1 = np.array(cv2.imread('..\local_data\ex6_data\\0001.jpg', cv2.IMREAD_GRAYSCALE))
+    img_2 = np.array(cv2.imread('..\local_data\ex6_data\\0002.jpg', cv2.IMREAD_GRAYSCALE))
+
+    K = np.array([  [1379.74,   0,          760.35],
+                    [    0,     1382.08,    503.41],
+                    [    0,     0,          1 ]] )
+    # load exercise 2D keypoints
+    p1 = np.loadtxt('..\local_data\ex6_data\matches0001.txt')
+    p2 = np.loadtxt('..\local_data\ex6_data\matches0002.txt')
+
+    images = np.array([img_1, img_2, img_2, img_2])
+    print(f"{images.shape=}")
+    
+    # initial_state: State = initialize_pipeline(images, K, print_stats=True, visualise=True,prematached_keypoints=[p1.T,p2.T])
+    initial_state: State = initialize_pipeline(images, K, print_stats=True, visualise=True)
+
+    pass
+    
+if __name__ == "__main__":
+    # ex6_triangulation_test()
+    shared_data_test()
+    print("Done")
