@@ -73,7 +73,7 @@ def get_candidate_keypoints(state: State, img_new: np.ndarray, print_stats: bool
 
     if print_stats:
         print(
-            f"Returning {new_C.shape[0]} new candidate keypoints. {keypoints_new.shape[0]-new_C.shape[0]} were rejected as being to close to existing landmarks"
+            f"UPDATE LANDMARKS: Returning {new_C.shape[0]} new candidate keypoints. {keypoints_new.shape[0]-new_C.shape[0]} were rejected as being to close to existing landmarks"
         )
     # calculate the descriptors of the new keypoints
     new_descriptors = patch_describe_keypoints(img_new, new_C, params.DESC_PATCH_RAD)
@@ -131,7 +131,7 @@ def get_updated_keypoints(
             new_T[i] = current_camera_pose
 
     if print_stats:
-        print(f"{updated_counter}/{new_C.shape[0]} candidates were updated, {new_C.shape[0]-updated_counter} were added new.")
+        print(f"UPDATE LANDMARKS: {updated_counter}/{new_C.shape[0]} candidates were updated, {new_C.shape[0]-updated_counter} were added new.")
     # transpose to make them 2 X N
     state.update_candidates(new_C.T, new_F.T, new_T.T)
     return state
@@ -154,7 +154,7 @@ def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K:
     if current_landmarks >= params.NUM_LANDMARKS_GOAL:
         if print_stats:
             print(
-                f"Number of landmarks currently tracked is {old_state.P.shape[1]}/{params.NUM_LANDMARKS_GOAL}. Not adding more."
+                f"UPDATE LANDMARKS: Number of landmarks currently tracked is {old_state.P.shape[1]}/{params.NUM_LANDMARKS_GOAL}. Not adding more."
             )
         return old_state
     else:
@@ -191,8 +191,8 @@ def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K:
             old_state.add_landmark(C.reshape(2, -1), new_X.reshape(3, -1))
 
     if print_stats:
-        print(f"Of {old_state.C.shape[1]} candidates, {tri_C.shape[1]} were triangulated and added to state.(X/P)")
-        print(f"Number of landmarks now tracked is {old_state.P.shape[1]}/{params.NUM_LANDMARKS_GOAL}.")
+        print(f"UPDATE LANDMARKS: Of {old_state.C.shape[1]} candidates, {tri_C.shape[1]} were triangulated and added to state.(X/P)")
+        print(f"UPDATE LANDMARKS: Number of landmarks now tracked is {old_state.P.shape[1]}/{params.NUM_LANDMARKS_GOAL}.")
 
     # TODO refine X estimate with non linear optimisation
     # move candidate to X,P in state

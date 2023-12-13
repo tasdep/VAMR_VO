@@ -52,7 +52,6 @@ def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_
     ax2.set_xlabel("X axis")
     ax2.set_ylabel("Y axis")
     ax2.set_zlabel("Z axis")
-    print(state.X.shape)
     ax2.scatter(state.X[0, :], state.X[1, :], state.X[2, :])
     cam_length = 2.0
     for i in range(3):
@@ -193,7 +192,7 @@ if __name__ == "__main__":
     for idx, filename, new_image, color_image in generator:
         if params.LIMIT_FRAME_COUNT and idx > params.FRAME_LIMIT:
             break
-        print(f"Analyzing image {idx}")
+        print(f"MAIN LOOP: Analyzing image {idx}")
         if prev_image is None:
             prev_image = new_image
             continue

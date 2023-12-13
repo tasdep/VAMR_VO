@@ -118,9 +118,9 @@ def estimating_current_pose(
         for num_outlier, outliers in zip(range(number_of_outliers), outliers_index):
             outlier_keypoints[num_outlier, :, :] = keypoints[outliers, :, :]
 
-        print('The RANSAC algorithm was succesful. Number of inliers found: ' + str(number_of_inliers) + ' ,out of: ' + str(number_of_points)+ '.')
+        print('ESTIMATE POSE: The RANSAC algorithm was succesful. Number of inliers found: ' + str(number_of_inliers) + ' ,out of: ' + str(number_of_points)+ '.')
     else:
-        print('The RANSAC algorithm did not converged.')
+        print('ESTIMATE POSE: The RANSAC algorithm did not converged.')
 
     # Convert the rotation vector to a matrix
     R = cv2.Rodrigues(rotation_vector)[0] #dim: 3x3
@@ -128,7 +128,7 @@ def estimating_current_pose(
 
     # Refine the translation and rotation with the determined inliers.
     if refine_with_DLT == True:
-        print('Refine the solution with the DLT algorithm.')
+        print('ESTIMATE POSE: Refine the solution with the DLT algorithm.')
 
         #TODO: use useExtrinsicGuess with the RANSAC rotation and
         succes_DLT, rotation_vector_DLT, translation_vector_DLT = cv2.solvePnP(inlier_landmarks, inlier_keypoints, K, None, flags=cv2.SOLVEPNP_ITERATIVE)
@@ -139,7 +139,7 @@ def estimating_current_pose(
             t = translation_vector_DLT #dim: 3x1
 
         else:
-            print('The DLT refinement did not work. Use the original solution.')
+            print('ESTIMATE POSE: The DLT refinement did not work. Use the original solution.')
             # Convert the rotation vector to a matrix
             R = cv2.Rodrigues(rotation_vector)[0] #dim: 3x3
             t = translation_vector #dim: 3x1
