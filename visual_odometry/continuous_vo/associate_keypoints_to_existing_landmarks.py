@@ -89,7 +89,7 @@ def track_and_update(
     # Update keypoints in the state
     # Transform P back to 2xN format
     if inlier_3D[2, :].min() < 0:
-        n = (inlier_3D[2,:]<0).size
+        n = (inlier_3D[2,:]<0).sum()
         print(f"{n} points triangulated behind camera during track and update!!!")
     state.update_landmarks(inlier_3D, inlier_new.T)
 

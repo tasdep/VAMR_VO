@@ -141,12 +141,12 @@ def initialize_pipeline(
     R_correct, t_correct = disambiguateRelativePose([R1, R2], t, inlier_pts_1, inlier_pts_2, K)
     T: np.ndarray = create_homogeneous_matrix(R_correct, t_correct)
     # 3D
-    X: np.ndarray = triangulate_points_wrapper(np.eye(4), T, K, inlier_pts_1.T, inlier_pts_2.T)
+    X, mask = triangulate_points_wrapper(np.eye(4), T, K, inlier_pts_1.T, inlier_pts_2.T)
     if X[2, :].min() < 0:
         n = (X[2,:]<0).sum()
         print(f"{n} points triangulated behind camera during initialisation")
     # 2D
-    P: np.ndarray = inlier_pts_2.T
+    P: np.ndarray = inlier_pts_2.T[:, mask]
 
     # Visualisation
     if visualise:

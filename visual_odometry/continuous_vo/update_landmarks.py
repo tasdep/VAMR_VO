@@ -186,10 +186,9 @@ def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K:
 
     # those above threshold calculate X
     for i, (C, F, T) in enumerate(zip(tri_C.T, tri_F.T, tri_T.T)):
-        new_X = triangulate_points_wrapper(T.reshape(4, 4), current_camera_pose.reshape(4, 4), K, F, C)
-        if new_X[2] < 0:
-            print("points triangulated behind camera in update landmarks!!!")
-        old_state.add_landmark(C.reshape(2, -1), new_X.reshape(3, -1))
+        new_X, mask= triangulate_points_wrapper(T.reshape(4, 4), current_camera_pose.reshape(4, 4), K, F, C)
+        if mask.all():
+            old_state.add_landmark(C.reshape(2, -1), new_X.reshape(3, -1))
 
     if print_stats:
         print(f"Of {old_state.C.shape[1]} candidates, {tri_C.shape[1]} were triangulated and added to state.(X/P)")

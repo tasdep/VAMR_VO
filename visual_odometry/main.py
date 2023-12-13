@@ -56,8 +56,8 @@ def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_
     ax2.scatter(state.X[0, :], state.X[1, :], state.X[2, :])
     cam_length = 2.0
     for i in range(3):
-        direction = R[:, i]
-        ax2.quiver(*t.ravel(), *direction, length=cam_length, color=["r", "g", "b"][i])
+        direction = R.T[:, i]
+        ax2.quiver(*(-R.T @ t).ravel(), *direction, length=cam_length, color=["r", "g", "b"][i])
 
     # Set fixed limits for the axes
     # You need to mess with this depending on the dataset.
@@ -65,8 +65,7 @@ def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_
     ax2.set_ylim([-100, 100])
     ax2.set_zlim([-100, 100])
 
-    # Set a consistent orientation
-    ax2.view_init(elev=-70, azim=-90)
+
 
     # Add a marker for the origin
     ax2.scatter([0], [0], [0], color="k", marker="o")  # Black dot at the origin
@@ -77,8 +76,8 @@ def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_
     ax3.set_xlabel("X axis")
     ax3.set_ylabel("Y axis")
     ax3.plot(camera_pose_history[0, :], camera_pose_history[2, :])
-    ax3.set_aspect('equal')
-    ax3.autoscale(enable=True, axis='both')
+    ax3.set_aspect("equal")
+    ax3.autoscale(enable=True, axis="both")
 
     plt.draw()
     plt.pause(0.001)  # Necessary for the plot to update
@@ -168,15 +167,18 @@ if __name__ == "__main__":
         ax1 = fig.add_subplot(gs[0, :])
         ax2 = fig.add_subplot(gs[1, 0], projection="3d")
         ax3 = fig.add_subplot(gs[1, 1])
+        # Set a consistent orientation
+        ax2.view_init(elev=-70, azim=-90)
         # setup plot event
         if params.WAIT_ARROW:
+
             def on_key(event):
                 if event.key == "right":
                     print("Right arrow key pressed.")
                     fig.canvas.stop_event_loop()
                 elif event.key == "escape":
                     print("Esc key pressed.")
-                    plt.close('all')
+                    plt.close("all")
                     exit(0)
 
             plt.connect("key_press_event", on_key)
