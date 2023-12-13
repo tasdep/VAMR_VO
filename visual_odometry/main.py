@@ -55,9 +55,15 @@ def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_
     ax2.set_zlabel("Z axis")
     ax2.scatter(state.X[0, :], state.X[1, :], state.X[2, :])
     cam_length = 2.0
-    for i in range(3):
-        direction = R.T[:, i]
-        ax2.quiver(*(-R.T @ t).ravel(), *direction, length=cam_length, color=["r", "g", "b"][i])
+    drawCamera(
+        ax2,
+        (-R.T @ t).ravel(),
+        R.T,
+        length_scale=10,
+        head_size=10,
+        equal_axis=False,
+        set_ax_limits=False,
+    )
     ax2.axis("equal")
 
     # Set fixed limits for the axes
@@ -75,7 +81,7 @@ def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_
     ax3.clear()
     ax3.set_title("2D Top-Down Camera Pose History")
     ax3.set_xlabel("X axis")
-    ax3.set_ylabel("Y axis")
+    ax3.set_ylabel("Z axis")
     ax3.plot(camera_pose_history[0, :], camera_pose_history[2, :])
     ax3.set_aspect("equal")
     ax3.autoscale(enable=True, axis="both")
