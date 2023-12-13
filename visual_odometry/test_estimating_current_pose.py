@@ -4,22 +4,24 @@ import matplotlib.pyplot as plt
 
 from pathlib import Path
 import os
+import sys
 
 import params.params as params
 
 from bootstrapping.initialization import initialize_pipeline
 from continuous_vo.associate_keypoints_to_existing_landmarks import track_and_update
 from continuous_vo.estimating_current_pose import estimating_current_pose
+from continuous_vo.ransacLocalization_2 import ransacLocalization
 
 from utils.state import State
 
 
 def update_visualization(
-    fig, ax1, ax2, ax3, current_image, state, R, t, camera_pose_history
+    fig, ax1, ax2, ax3, current_image, state, R, t, camera_pose_history, R_ground, t_ground, camera_pose_history_ground, idx
 ):
     # Update Plot 1: Current image with keypoints
     ax1.clear()
-    ax1.set_title("Current Image with Keypoints")
+    ax1.set_title("Current Image with Keypoints in Frame: "+str(idx))
     img_with_keypoints = current_image
     for p in state.P.T:
         p = p.astype(int)
@@ -50,7 +52,7 @@ def update_visualization(
     ax2.set_zlabel("Z axis")
     print(state.X.shape)
     ax2.scatter(state.X[0, :], state.X[1, :], state.X[2, :])
-    cam_length = 2.0
+    cam_length = 10
     for i in range(3):
         direction = R[:, i]
         ax2.quiver(*t.ravel(), *direction, length=cam_length, color=["r", "g", "b"][i])
@@ -72,8 +74,10 @@ def update_visualization(
     ax3.set_title("2D Top-Down Camera Pose History")
     ax3.set_xlabel("X axis")
     ax3.set_ylabel("Y axis")
-    ax3.plot(camera_pose_history[0, :], camera_pose_history[1, :])
+    ax3.plot(camera_pose_history[0, :], camera_pose_history[1, :], label="Ours")
+    #ax3.plot(camera_pose_history_ground[0, :], camera_pose_history_ground[1, :], label="Exercise")
     ax3.scatter(camera_pose_history[0, :], camera_pose_history[1, :], s=10, c='r', marker='o')
+    ax3.legend()
 
     plt.draw()
     plt.pause(0.001)  # Necessary for the plot to update
@@ -153,7 +157,7 @@ if __name__ == "__main__":
         initial_state: State
         initial_pose: np.ndarray
         initial_state, initial_pose = initialize_pipeline(
-            images, K, visualise=True, print_stats=True
+            images, K, visualise=False, print_stats=True
         )
 
     ###############################
@@ -175,6 +179,8 @@ if __name__ == "__main__":
     generator = image_generator(folder_path)
 
     camera_pose_history = np.zeros((3, len(os.listdir(folder_path))))
+    camera_pose_history_ground = np.zeros((3, len(os.listdir(folder_path))))
+
     prev_image = None
     for idx, filename, new_image, color_image in generator:
         print(f"Analyzing image {idx}")
@@ -188,8 +194,13 @@ if __name__ == "__main__":
             visualize=False,
             visualizer_img=color_image,
         )
+
         R, t = estimating_current_pose(current_state, K, visualization=False)
+        R_ground, t_ground = ransacLocalization(current_state, K)
+
         camera_pose_history[:, idx] = t.squeeze()
+        camera_pose_history_ground[:, idx] = t_ground.squeeze()
+
         update_visualization(
             fig,
             ax1,
@@ -200,5 +211,12 @@ if __name__ == "__main__":
             R,
             t,
             camera_pose_history[:, :idx],
+            R_ground,
+            t_ground,
+            camera_pose_history_ground[:, :idx],
+            idx,
         )
+
         prev_image = new_image
+
+

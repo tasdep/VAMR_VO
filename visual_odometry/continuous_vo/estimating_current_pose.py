@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 from utils.state import State
 from params import params as params
-from utils.draw_camera import drawCamera
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
@@ -203,6 +202,7 @@ def visualize_pose(
     ax1 = fig.add_subplot(1, 2, 1)
     ax1.scatter(landmarks[:, :, 0], landmarks[:, :, 1], color='blue', marker='.',  s=1)
     ax1.scatter(camera_position[0], camera_position[1], color='red', marker='X', s=5)
+    ax1.plot(camera_position[0], camera_position[1], color='green')
     ax1.set_xlim(-60,60)
     ax1.set_ylim(-60,60)
     ax1.set_xlabel('x')
@@ -221,6 +221,10 @@ def visualize_pose(
     ax2.set_zlim3d(-60, 50)
     ax2.set_title("3D view")
 
-    drawCamera(ax2, camera_position, R, length_scale=10, head_size=10, equal_axis=True, set_ax_limits=True)
+    #drawCamera(ax2, camera_position, R, length_scale=10, head_size=10, equal_axis=True, set_ax_limits=True)
+    cam_length = 10
+    for i in range(3):
+        direction = R[:, i]
+        ax2.quiver(*t.ravel(), *direction, length=cam_length, color=["r", "g", "b"][i])
 
     plt.pause(1)

@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils.arrow_3d import Arrow3D
+from code_previous_exercises.arrow_3d import Arrow3D
 
 
 def drawCamera(ax, position, direction, length_scale = 1, head_size = 10, 
