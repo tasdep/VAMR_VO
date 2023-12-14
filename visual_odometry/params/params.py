@@ -9,7 +9,7 @@ class Dataset(Enum):
     DATASET4 = "Ransac exercise"
 
 
-DATASET = Dataset.DATASET1
+DATASET = Dataset.DATASET2
 
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'
@@ -42,7 +42,7 @@ HARRIS_SOBEL_SIZE = 3
 HARRIS_K = 0.1
 
 # after harris corner detector to threshold which points are corners
-KEYPOINT_THRESHOLD = 0.1
+KEYPOINT_THRESHOLD = 0.2
 
 DESC_PATCH_RAD = 3
 
@@ -60,9 +60,11 @@ KLT_MAX_LEVEL = 2
 # after a set number of iterations. Oring them results in termination after whichever criteria is met first.
 KLT_CRITERIA = (
     cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT,  # Criteria types: EPS or COUNT
-    10,  # Maximum number of iterations the algorithm will take
+    20,  # Maximum number of iterations the algorithm will take
     0.003,  # Epsilon value for convergence
 )
+
+TRACKING_OUTLIER_REJECTION_SIGMA = 2.0
 
 # Params for 4.2 - RANSAC localization for pose estimation #
 ################################################################
@@ -89,7 +91,9 @@ EQUAL_KEYPOINT_THRESHOLD = 2.1
 MATCH_DISTANCE_THRESHOLD = 300
 
 # threshold for angle between camera poses to add candidate to landmark set
-TRIANGULATION_ANGLE_THRESHOLD = 20  # [deg]
+TRIANGULATION_ANGLE_THRESHOLD = 10  # [deg]
 
 # number of landmarks to maintain
 NUM_LANDMARKS_GOAL = 400
+
+LIMIT_NEW_LANDMARKS = 30

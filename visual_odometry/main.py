@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
 from pathlib import Path
 import os
@@ -21,18 +22,32 @@ from utils.visualisation import drawCamera
 
 # RED = Candidates
 # GREEN = Landmarks
-def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_pose_history):
+def update_visualization(
+    fig,
+    ax1,
+    ax2,
+    ax3,
+    current_image,
+    state,
+    R,
+    t,
+    camera_pose_history,
+    num_added_landmarks,
+    idx,
+):
     # Update Plot 1: Current image with keypoints
     ax1.clear()
-    ax1.set_title("Current Image with Keypoints")
+    ax1.set_title(f"Image {idx}. With {num_added_landmarks} new landmarks")
     img_with_keypoints = current_image
-    for p in state.P.T:
+    num_old_landmarks = state.P.shape[1] - num_added_landmarks
+    for idx, p in enumerate(state.P.T):
+        color = (0, 255, 0) if idx < num_old_landmarks else (11, 227, 195)
         p = p.astype(int)
         cv2.circle(
             img_with_keypoints,
             (p[0], p[1]),
-            radius=3,
-            color=(0, 255, 0),
+            radius=5,
+            color=color,
             thickness=-1,
         )
     if state.C is not None:
@@ -45,6 +60,17 @@ def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_
                 color=(255, 0, 0),
                 thickness=-1,
             )
+    # Create proxy artists for the legend
+    green_circle = Line2D(
+        [0], [0], linestyle="none", marker="o", markersize=10, markerfacecolor=(0, 1, 0)
+    )
+    blue_circle = Line2D(
+        [0], [0], linestyle="none", marker="o", markersize=10, markerfacecolor=(1, 0, 0)
+    )
+
+    # Add the legend to the plot
+    ax1.legend([green_circle, blue_circle], ["Landmarks", "Candidates"], numpoints=1)
+
     ax1.imshow(img_with_keypoints)
 
     # Update Plot 2: 3D Point Cloud with Camera Pose
@@ -54,12 +80,11 @@ def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_
     ax2.set_ylabel("Y axis")
     ax2.set_zlabel("Z axis")
     ax2.scatter(state.X[0, :], state.X[1, :], state.X[2, :])
-    cam_length = 2.0
     drawCamera(
         ax2,
         (-R.T @ t).ravel(),
         R.T,
-        length_scale=10,
+        length_scale=20,
         head_size=10,
         equal_axis=False,
         set_ax_limits=False,
@@ -71,8 +96,6 @@ def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_
     # ax2.set_xlim([-100, 100])
     # ax2.set_ylim([-100, 100])
     # ax2.set_zlim([-100, 100])
-
-
 
     # Add a marker for the origin
     ax2.scatter([0], [0], [0], color="k", marker="o")  # Black dot at the origin
@@ -123,26 +146,44 @@ if __name__ == "__main__":
         case params.Dataset.DATASET1:
             folder_path = (base_path / "../shared_data/parking/images").resolve()
             calib_path = (base_path / "../shared_data/parking/K.txt").resolve()
-            K: np.ndarray = np.genfromtxt(calib_path, delimiter=",", dtype=float)  # calibration matrix[3x3]
+            K: np.ndarray = np.genfromtxt(
+                calib_path, delimiter=",", dtype=float
+            )  # calibration matrix[3x3]
             pass
         case params.Dataset.DATASET2:
+            folder_path = (base_path / "../local_data/kitti/05/image_0").resolve()
+            calib_path = (base_path / "../local_data/kitti/05/calib.txt").resolve()
+            all_calib: np.ndarray = np.genfromtxt(
+                calib_path, delimiter=" ", dtype=float
+            )
+            K: np.ndarray = all_calib[0, 1:].reshape([3, 4])[
+                :, :-1
+            ]  # calibration matrix[3x3]
             pass
         case params.Dataset.DATASET3:
             pass
         case params.Dataset.DATASET4:
             folder_path = (base_path / "../local_data/test_data").resolve()
             calib_path = (base_path / "../local_data/test_data/K.txt").resolve()
-            K: np.ndarray = np.genfromtxt(calib_path, delimiter=" ", dtype=float)  # calibration matrix[3x3]
+            K: np.ndarray = np.genfromtxt(
+                calib_path, delimiter=" ", dtype=float
+            )  # calibration matrix[3x3]
 
     ###############################
     # Bootstrap Initial Landmarks #
     ###############################
     if params.SKIP_BOOTSTRAP:
         if params.DATASET != params.Dataset.DATASET4:
-            print("Error: Must use Dataset 4 (local_data from ransac ex) for skipping initialization")
+            print(
+                "Error: Must use Dataset 4 (local_data from ransac ex) for skipping initialization"
+            )
             os._exit()
-        keypoints = np.loadtxt((base_path / "../local_data/test_data/keypoints.txt").resolve()).T
-        p_W_landmarks = np.loadtxt((base_path / "../local_data/test_data/p_W_landmarks.txt").resolve()).T
+        keypoints = np.loadtxt(
+            (base_path / "../local_data/test_data/keypoints.txt").resolve()
+        ).T
+        p_W_landmarks = np.loadtxt(
+            (base_path / "../local_data/test_data/p_W_landmarks.txt").resolve()
+        ).T
         initial_state = State()
         initial_state.update_landmarks(p_W_landmarks, keypoints)
 
@@ -156,7 +197,9 @@ if __name__ == "__main__":
 
         initial_state: State
         initial_pose: np.ndarray
-        initial_state, initial_pose = initialize_pipeline(images, K, visualise=False, print_stats=True)
+        initial_state, initial_pose = initialize_pipeline(
+            images, K, visualise=False, print_stats=True
+        )
 
     ###############################
     # Continuous Visual Odometry  #
@@ -197,6 +240,8 @@ if __name__ == "__main__":
 
     camera_pose_history = np.zeros((3, len(os.listdir(folder_path))))
     prev_image = None
+    R = None
+    t = None
     for idx, filename, new_image, color_image in generator:
         if params.LIMIT_FRAME_COUNT and idx > params.FRAME_LIMIT:
             break
@@ -212,13 +257,18 @@ if __name__ == "__main__":
             visualizer_img=color_image,
         )
         # fig_cp, ax_cp = plt.subplots()
-        # figure=fig_cp, image=color_image
+        # figure = fig_cp
+        # image = color_image
         R, t = estimating_current_pose(current_state, K, visualization=False)
         curr_pose: np.ndarray = create_homogeneous_matrix(R, t).flatten()
         # convert t to world frame for plotting
         t_W = -R.T @ t
         camera_pose_history[:, idx] = t_W.squeeze()
-        current_state = update_landmarks(current_state, prev_image, new_image, curr_pose, K, print_stats=True)
+        num_landmarks = current_state.P.shape[1]
+        current_state = update_landmarks(
+            current_state, prev_image, new_image, curr_pose, K, print_stats=True
+        )
+        added_landmarks = current_state.P.shape[1] - num_landmarks
         if not params.DO_PROFILING:
             update_visualization(
                 fig,
@@ -229,7 +279,9 @@ if __name__ == "__main__":
                 current_state,
                 R,
                 t,
-                camera_pose_history[:, :idx],
+                camera_pose_history[:, : min(camera_pose_history.shape[1], idx + 1)],
+                added_landmarks,
+                idx,
             )
         prev_image = new_image
 

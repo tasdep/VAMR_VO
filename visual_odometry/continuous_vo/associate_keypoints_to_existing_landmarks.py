@@ -77,6 +77,17 @@ def track_and_update(
     inlier_prev = tracked_prev[inlier_mask.ravel() == 1]  # Shape Nx2
     inlier_3D = tracked_3D[:, inlier_mask.flatten().astype(bool)]  # Shape 3xN
 
+    # Get rid of outliers in terms of distance moved in 2D
+    # Note: I (kappi) just made this up. Feel free to question.
+    euclidean_distances = np.linalg.norm(inlier_new - inlier_prev, axis=1)
+    movement_outliers = (
+        np.abs(euclidean_distances - euclidean_distances.mean())
+        > params.TRACKING_OUTLIER_REJECTION_SIGMA * euclidean_distances.std()
+    )
+    inlier_new = inlier_new[~movement_outliers]  # Shape Nx2
+    inlier_prev = inlier_prev[~movement_outliers]  # Shape Nx2
+    inlier_3D = inlier_3D[:, ~movement_outliers]  # Shape 3xN
+
     if visualize:
         visualize_keypoint_movement_with_status(
             "After running ransac",
@@ -88,9 +99,6 @@ def track_and_update(
 
     # Update keypoints in the state
     # Transform P back to 2xN format
-    if inlier_3D[2, :].min() < 0:
-        n = (inlier_3D[2,:]<0).sum()
-        print(f"{n} points triangulated behind camera during track and update!!!")
     state.update_landmarks(inlier_3D, inlier_new.T)
 
 
@@ -119,7 +127,7 @@ def visualize_keypoint_movement_with_status(
 
     # Iterate through keypoints and status
     for p1, p2, s in zip(prev_keypoints, new_keypoints, status):
-        # Convert to integer tuples 
+        # Convert to integer tuples
         p1 = (int(p1[0]), int(p1[1]))
         p2 = (int(p2[0]), int(p2[1]))
 

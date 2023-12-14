@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 import params.params as params
 
 
-def run_harris_detector(img: np.ndarray, visualise: bool = False, print_stats: bool = False):
+def run_harris_detector(
+    img: np.ndarray, visualise: bool = False, print_stats: bool = False
+):
     """
     Detects keypoints using the Harris corner detector on the given image.
 
@@ -40,7 +42,9 @@ def run_harris_detector(img: np.ndarray, visualise: bool = False, print_stats: b
     return keypoints
 
 
-def patch_describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> np.ndarray:
+def patch_describe_keypoints(
+    img: np.ndarray, keypoints: np.ndarray, r: int
+) -> np.ndarray:
     """
     Extracts image patch descriptors centered around keypoints.
 
@@ -58,16 +62,26 @@ def patch_describe_keypoints(img: np.ndarray, keypoints: np.ndarray, r: int) -> 
         return np.ndarray((0, (2 * r + 1) ** 2))
     N: int = keypoints.shape[0]
     descriptors: np.ndarray = np.zeros([N, (2 * r + 1) ** 2])
-    padded: np.ndarray = np.pad(img, [(r, r), (r, r)], mode="constant", constant_values=0)
+    padded: np.ndarray = np.pad(
+        img, [(r, r), (r, r)], mode="constant", constant_values=0
+    )
 
     for i in range(N):
         kp: np.ndarray = keypoints[i, :].astype(int) + r
-        descriptors[i, :] = padded[(kp[1] - r) : (kp[1] + r + 1), (kp[0] - r) : (kp[0] + r + 1)].flatten()
+        descriptors[i, :] = padded[
+            (kp[1] - r) : (kp[1] + r + 1), (kp[0] - r) : (kp[0] + r + 1)
+        ].flatten()
 
     return descriptors
 
 
-def triangulate_points_wrapper(T1: np.ndarray, T2: np.ndarray, K: np.ndarray, points_1: np.ndarray, points_2: np.ndarray)-> (np.ndarray, np.ndarray):
+def triangulate_points_wrapper(
+    T1: np.ndarray,
+    T2: np.ndarray,
+    K: np.ndarray,
+    points_1: np.ndarray,
+    points_2: np.ndarray,
+) -> (np.ndarray, np.ndarray):
     """
     Triangulates 3D points from corresponding 2D points in two camera views.
 
@@ -101,7 +115,7 @@ def triangulate_points_wrapper(T1: np.ndarray, T2: np.ndarray, K: np.ndarray, po
     mask: np.ndarray = np.logical_and(P_C1[2, :] > 0, P_C2[2, :] > 0)
     num_points_behind_camera: int = mask.size - np.sum(mask)
     # print(f"{num_points_behind_camera} points filtered from behind camera.")
-    points_3D = points_3D[0:3, mask]
+    points_3D = points_3D[0:3, :]
     # dehomgenize
     return points_3D, mask
 
@@ -124,7 +138,9 @@ def reprojection_error(params, K, dist_coeffs, rvec, tvec, point_2d):
     point_3d = np.array([x, y, z])
 
     # Project the 3D point to 2D using the camera parameters
-    projected_point, _ = cv2.projectPoints(np.array([point_3d]), rvec, tvec, K, dist_coeffs)
+    projected_point, _ = cv2.projectPoints(
+        np.array([point_3d]), rvec, tvec, K, dist_coeffs
+    )
 
     # Compute the reprojection error
     error = point_2d - projected_point[0, 0]
