@@ -5,7 +5,11 @@ from scipy.spatial.distance import cdist
 import math
 
 from utils.state import State
-from utils.image_processing import run_harris_detector, patch_describe_keypoints, triangulate_points_wrapper
+from utils.image_processing import (
+    run_harris_detector,
+    patch_describe_keypoints,
+    triangulate_points_wrapper,
+)
 
 
 def update_landmarks(
@@ -29,13 +33,27 @@ def update_landmarks(
     Returns:
     - The updated state with new landmarks.
     """
-    new_C, new_descriptors = get_candidate_keypoints(state, img_new, print_stats=print_stats)
-    state = get_updated_keypoints(state, current_camera_pose, img_prev, img_new, new_C, new_descriptors, print_stats=print_stats)
-    state = triangulate_candidates(state, current_camera_pose, K, print_stats=print_stats)
+    new_C, new_descriptors = get_candidate_keypoints(
+        state, img_new, print_stats=print_stats
+    )
+    state = get_updated_keypoints(
+        state,
+        current_camera_pose,
+        img_prev,
+        img_new,
+        new_C,
+        new_descriptors,
+        print_stats=print_stats,
+    )
+    state = triangulate_candidates(
+        state, current_camera_pose, K, print_stats=print_stats
+    )
     return state
 
 
-def get_candidate_keypoints(state: State, img_new: np.ndarray, print_stats: bool = False) -> (np.ndarray, np.ndarray):
+def get_candidate_keypoints(
+    state: State, img_new: np.ndarray, print_stats: bool = False
+) -> (np.ndarray, np.ndarray):
     """
     Get candidate keypoints in the new image that are not present in the state and
     generate descriptors.
@@ -109,10 +127,15 @@ def get_updated_keypoints(
     # F,T will be the same size as new_C
     new_F = np.ndarray(new_C.shape)
     new_T = np.ndarray((new_C.shape[0], 16))
-    old_descriptors = patch_describe_keypoints(img_prev, state.C.T, params.DESC_PATCH_RAD)
+    old_descriptors = patch_describe_keypoints(
+        img_prev, state.C.T, params.DESC_PATCH_RAD
+    )
     # find best match for each new descriptor
     bf: cv2.BFMatcher = cv2.BFMatcher.create(cv2.NORM_L2)
-    matches = bf.match(queryDescriptors=new_descriptors.astype(np.float32), trainDescriptors=old_descriptors.astype(np.float32))
+    matches = bf.match(
+        queryDescriptors=new_descriptors.astype(np.float32),
+        trainDescriptors=old_descriptors.astype(np.float32),
+    )
     # note: matches is the length of query descriptors and in that order
     # check matches whether they are close enough to be the same
     for i, candidate in enumerate(new_C):
@@ -131,13 +154,20 @@ def get_updated_keypoints(
             new_T[i] = current_camera_pose
 
     if print_stats:
-        print(f"UPDATE LANDMARKS: {updated_counter}/{new_C.shape[0]} candidates were updated, {new_C.shape[0]-updated_counter} were added new.")
+        print(
+            f"UPDATE LANDMARKS: {updated_counter}/{new_C.shape[0]} candidates were updated, {new_C.shape[0]-updated_counter} were added new."
+        )
     # transpose to make them 2 X N
     state.update_candidates(new_C.T, new_F.T, new_T.T)
     return state
 
 
-def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K: np.ndarray, print_stats: bool = False) -> State:
+def triangulate_candidates(
+    old_state: State,
+    current_camera_pose: np.ndarray,
+    K: np.ndarray,
+    print_stats: bool = False,
+) -> State:
     """
     Triangulate candidate keypoints where the angle between frames is greater than a threshold
     and update the state with the triangulated landmarks.
@@ -158,19 +188,25 @@ def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K:
             )
         return old_state
     else:
-        num_to_add: int = params.NUM_LANDMARKS_GOAL - current_landmarks
+        num_to_add: int = min(
+            params.LIMIT_NEW_LANDMARKS, params.NUM_LANDMARKS_GOAL - current_landmarks
+        )
 
     angles: np.ndarray = np.zeros((old_state.C.shape[1]))
     # do projections
     for i, (C, F, T) in enumerate(zip(old_state.C.T, old_state.F.T, old_state.T.T)):
         v_orig = unit_vector_to_pixel_in_world(K, T.reshape((4, 4)), F)
-        v_curr = unit_vector_to_pixel_in_world(K, current_camera_pose.reshape((4, 4)), C)
+        v_curr = unit_vector_to_pixel_in_world(
+            K, current_camera_pose.reshape((4, 4)), C
+        )
         angles[i] = angle_between_units(v_orig, v_curr)
 
     # assumption: larger angle => better landmark to start tracking
     # take the num_to_add largest angles, set the rest to zero
-    small_indices = np.argsort(angles)[: (angles.shape[0] - num_to_add)]
-    angles[small_indices] = 0
+    # This gets points close to the camera.
+    # small_indices = np.argsort(angles)[: (angles.shape[0] - num_to_add)]
+    # angles[small_indices] = 0
+
     # now filter to make sure we only have valid ones
     mask = np.rad2deg(angles) > params.TRIANGULATION_ANGLE_THRESHOLD
 
@@ -185,14 +221,23 @@ def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K:
     tri_T = old_state.T[:, mask]
 
     # those above threshold calculate X
+    num_successfully_added = 0
     for i, (C, F, T) in enumerate(zip(tri_C.T, tri_F.T, tri_T.T)):
-        new_X, mask= triangulate_points_wrapper(T.reshape(4, 4), current_camera_pose.reshape(4, 4), K, F, C)
+        new_X, mask = triangulate_points_wrapper(
+            T.reshape(4, 4), current_camera_pose.reshape(4, 4), K, F, C
+        )
         if mask.all():
+            num_successfully_added += 1
             old_state.add_landmark(C.reshape(2, -1), new_X.reshape(3, -1))
 
     if print_stats:
-        print(f"UPDATE LANDMARKS: Of {old_state.C.shape[1]} candidates, {tri_C.shape[1]} were triangulated and added to state.(X/P)")
-        print(f"UPDATE LANDMARKS: Number of landmarks now tracked is {old_state.P.shape[1]}/{params.NUM_LANDMARKS_GOAL}.")
+        print(
+            f"UPDATE LANDMARKS: Of {old_state.C.shape[1]} candidates, we attempted to add {tri_C.shape[1]} and "
+            f"{num_successfully_added} were triangulated and added to state.(X/P)"
+        )
+        print(
+            f"UPDATE LANDMARKS: Number of landmarks now tracked is {old_state.P.shape[1]}/{params.NUM_LANDMARKS_GOAL}."
+        )
 
     # TODO refine X estimate with non linear optimisation
     # move candidate to X,P in state
@@ -200,7 +245,9 @@ def triangulate_candidates(old_state: State, current_camera_pose: np.ndarray, K:
     return old_state
 
 
-def unit_vector_to_pixel_in_world(K: np.ndarray, T: np.ndarray, pixel: np.ndarray) -> np.ndarray:
+def unit_vector_to_pixel_in_world(
+    K: np.ndarray, T: np.ndarray, pixel: np.ndarray
+) -> np.ndarray:
     """
     Convert pixel coordinates to unit vector in world coordinates.
 
@@ -223,7 +270,9 @@ def unit_vector_to_pixel_in_world(K: np.ndarray, T: np.ndarray, pixel: np.ndarra
     direction_camera_coordinates = np.dot(K_inv, ndc_homogeneous)
 
     # normalise the vector because we only care about direction
-    vector_camera_coordinates = direction_camera_coordinates / np.linalg.norm(direction_camera_coordinates)
+    vector_camera_coordinates = direction_camera_coordinates / np.linalg.norm(
+        direction_camera_coordinates
+    )
 
     # Transform to world coordinates
     vector_world_coordinates = np.dot(R.T, vector_camera_coordinates)

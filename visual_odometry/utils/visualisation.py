@@ -2,7 +2,16 @@ import numpy as np
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 
-def drawCamera(ax, position, direction, length_scale=1, head_size=10, equal_axis=True, set_ax_limits=True):
+
+def drawCamera(
+    ax,
+    position,
+    direction,
+    length_scale=1,
+    head_size=10,
+    equal_axis=True,
+    set_ax_limits=True,
+):
     # Draws a camera consisting of arrows into a 3d Plot
     # ax            axes object, creates as follows
     #                   fig = plt.figure()
@@ -42,6 +51,30 @@ def drawCamera(ax, position, direction, length_scale=1, head_size=10, equal_axis
     )
     ax.add_artist(a)
 
+    ax.text(
+        position[0] + length_scale * direction[0, 0],
+        position[1] + length_scale * direction[1, 0],
+        position[2] + length_scale * direction[2, 0],
+        "x",
+        color="red",
+    )
+
+    ax.text(
+        position[0] + length_scale * direction[0, 1],
+        position[1] + length_scale * direction[1, 1],
+        position[2] + length_scale * direction[2, 1],
+        "y",
+        color="green",
+    )
+
+    ax.text(
+        position[0] + length_scale * direction[0, 2],
+        position[1] + length_scale * direction[1, 2],
+        position[2] + length_scale * direction[2, 2],
+        "z",
+        color="blue",
+    )
+
     if not set_ax_limits:
         return
 
@@ -54,7 +87,10 @@ def drawCamera(ax, position, direction, length_scale=1, head_size=10, equal_axis
 
     # This sets the aspect ratio to 'equal'
     if equal_axis:
-        ax.set_box_aspect((np.ptp(ax.get_xlim()), np.ptp(ax.get_ylim()), np.ptp(ax.get_zlim())))
+        ax.set_box_aspect(
+            (np.ptp(ax.get_xlim()), np.ptp(ax.get_ylim()), np.ptp(ax.get_zlim()))
+        )
+
 
 class Arrow3D(FancyArrowPatch):
     def __init__(self, xs, ys, zs, *args, **kwargs):
