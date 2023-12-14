@@ -64,7 +64,10 @@ def get_candidate_keypoints(state: State, img_new: np.ndarray, print_stats: bool
     - new_C: Mx2 matrix of new candidate keypoints.
     """
     # get the new keypoints with harris detector
-    keypoints_new = run_harris_detector(img_new)
+    # keypoints_new = run_harris_detector(img_new)
+    sift = cv2.SIFT.create(nfeatures=500)
+    sift_keypoints = sift.detect(img_new)
+    keypoints_new = cv2.KeyPoint.convert(sift_keypoints)
     new_C: np.ndarray
 
     # compare each keypoint in P with the new kepoints
