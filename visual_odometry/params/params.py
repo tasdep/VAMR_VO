@@ -11,6 +11,19 @@ class Dataset(Enum):
 
 DATASET = Dataset.DATASET4
 
+# turning on profiling disables the visualiser
+# output is a file 'full_run.stats'
+# to visualise use cmd line tool snakeviz "snakeviz *.stats"
+DO_PROFILING = False
+
+# wait for arrow key to advance to next frame
+WAIT_ARROW = False
+
+
+# limit the number of frames
+LIMIT_FRAME_COUNT = True
+FRAME_LIMIT = 100
+
 ################################################################
 # Params for 3 - Initialization #
 ################################################################
@@ -23,12 +36,13 @@ SKIP_BOOTSTRAP = False
 # Which frames from the input to use for bootstrapping initial features.
 BOOTSRAP_FRAMES = [0, 3]
 
-HARRIS_BLOCK_SIZE = 15
+HARRIS_BLOCK_SIZE = 9
 HARRIS_SOBEL_SIZE = 3
 # Magic number in harris algo
 HARRIS_K = 0.1
 
-KEYPOINT_THRESHOLD = 0.01
+# after harris corner detector to threshold which points are corners
+KEYPOINT_THRESHOLD = 0.1
 
 DESC_PATCH_RAD = 3
 
@@ -50,16 +64,32 @@ KLT_CRITERIA = (
     0.003,  # Epsilon value for convergence
 )
 
-################################################################
 # Params for 4.2 - RANSAC localization for pose estimation #
 ################################################################
 
 # Number of iterations. Default: 100
-POSE_RANSAC_ITERATION = 100
+POSE_RANSAC_ITERATION = 2000
 
 # Inlier threshold value used by the RANSAC procedure.
 # The parameter value is the maximum allowed distance between the observed and computed point projections to consider it an inlier. Default: 8.0
 POSE_RANSAC_REPROJECTION_ERROR = 10.0
 
 # The probability that the algorithm produces a useful result. Default: 0.99
-POSE_RANSAC_CONFIDENCE = 0.95
+POSE_RANSAC_CONFIDENCE = 0.9
+
+################################################################
+# Params for 4.3 - Associating keypoints to exisitng landmarks #
+################################################################
+# threshold to determine whether a newly detected keypoint is the same as a currently tracked one
+# eg. when comparing candidate keypoints to state.P
+# value is a pixel radius
+EQUAL_KEYPOINT_THRESHOLD = 2.1
+
+# minimum 'distance' between matches for them to be equal
+MATCH_DISTANCE_THRESHOLD = 300
+
+# threshold for angle between camera poses to add candidate to landmark set
+TRIANGULATION_ANGLE_THRESHOLD = 10  # [deg]
+
+# number of landmarks to maintain
+NUM_LANDMARKS_GOAL = 400
