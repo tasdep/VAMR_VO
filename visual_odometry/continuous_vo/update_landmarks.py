@@ -74,7 +74,7 @@ def get_candidate_keypoints(state: State, img_new: np.ndarray, print_stats: bool
         distances: np.ndarray = cdist(keypoints_new, state.P.T, metric="cityblock")
         # for each new point, find closest old eg. min along rows
         mins: np.ndarray = np.argmin(distances, axis=1)
-        # create mask where min distance < params.EQUAL_KEYPOINT_THRESHOLD
+        # create mask where min distance > params.EQUAL_KEYPOINT_THRESHOLD
         mask: np.ndarray = mins > params.EQUAL_KEYPOINT_THRESHOLD
 
         new_C = keypoints_new[mask, :]
@@ -118,16 +118,15 @@ def get_updated_keypoints(
     # mask this after each step
     indices_old_C: np.ndarray = np.arange(state.C.shape[1])
 
-    # use KLT to track old candidate keypoints, output is predicted new keypoints
-    # Parameters for KLT tracker
-    lk_params = {
-        "winSize": params.KLT_WINDOW_SIZE,
-        "maxLevel": params.KLT_MAX_LEVEL,
-        "criteria": params.KLT_CRITERIA,
-    }
-
     # check if we have existing candidates
     if state.C.size > 0:
+        # use KLT to track old candidate keypoints, output is predicted new keypoints
+        # Parameters for KLT tracker
+        lk_params = {
+            "winSize": params.KLT_WINDOW_SIZE,
+            "maxLevel": params.KLT_MAX_LEVEL,
+            "criteria": params.KLT_CRITERIA,
+        }
         # Track the keypoints in the new image
         # new_keypoints.shape = Nx1x2
         old_C = state.C.T.reshape(-1, 1, 2)
@@ -163,7 +162,7 @@ def get_updated_keypoints(
         # for each new point, find closest old eg. min along rows
         mins: np.ndarray = np.argmin(distances, axis=1)
         # create mask where min distance < params.EQUAL_KEYPOINT_THRESHOLD
-        mask: np.ndarray = mins > 200
+        mask: np.ndarray = mins > params.EQUAL_KEYPOINT_THRESHOLD
 
         new_C = new_keypoints[mask, :]
         new_F = new_C
@@ -177,7 +176,7 @@ def get_updated_keypoints(
                 f"{state.C.shape[1]-status.sum()} rejected by KLT. {status.sum()-inlier_mask.sum()} rejected by RANSAC."
             )
             print(f"UPDATE LANDMARKS: {new_C.shape[0]}/{new_keypoints.shape[0]} candidates added new.")
-        plot_image_and_points(img_new, tracked_C, new_C)
+        plot_image_and_points(img_new, tracked_C, new_C, new_keypoints[mask==False, :])
     else:
         tracked_C = np.zeros((0, 2))
         tracked_F = np.zeros((0, 2))
@@ -317,7 +316,7 @@ def angle_between_units(v1: np.ndarray, v2: np.ndarray):
     """
     return np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
 
-def plot_image_and_points(image, points1, points2):
+def plot_image_and_points(image, points1, points2, points3):
     """
     Creates a figure, plots an image, and two arrays of 2D points with different colors.
 
@@ -331,13 +330,17 @@ def plot_image_and_points(image, points1, points2):
     # Plot the image
     ax.imshow(image)  # Use 'gray' colormap for grayscale images
 
-    # Plot points from the first array in red
     if len(points1) > 0:
-        ax.scatter(points1[:, 0], points1[:, 1], color='red', label='Points Array 1')
+        ax.scatter(points1[:, 0], points1[:, 1], color='blue', label='Tracked points')
 
-    # Plot points from the second array in blue
+    for point in points1:
+        circle = plt.Circle(point, radius=8, fill=False, color='blue')
+        ax.add_patch(circle)
+
     if len(points2) > 0:
-        ax.scatter(points2[:, 0], points2[:, 1], color='blue', label='Points Array 2')
+        ax.scatter(points2[:, 0], points2[:, 1], color='lime', label='Added new',s=4)
+    if len(points3) > 0:
+        ax.scatter(points2[:, 0], points2[:, 1], color='red', label='Rejected new',s=4)
 
     # Add labels and legend
     plt.xlabel('X-axis')
