@@ -87,13 +87,10 @@ POSE_RANSAC_CONFIDENCE = 0.999
 # value is a pixel radius
 EQUAL_KEYPOINT_THRESHOLD = 8
 
-# minimum 'distance' between matches for them to be equal
-MATCH_DISTANCE_THRESHOLD = 300
-
 # threshold for angle between camera poses to add candidate to landmark set
 TRIANGULATION_ANGLE_THRESHOLD = 10  # [deg]
 
 # number of landmarks to maintain
 NUM_LANDMARKS_GOAL = 400
 
-LIMIT_NEW_LANDMARKS = 30
+LIMIT_NEW_LANDMARKS = 100

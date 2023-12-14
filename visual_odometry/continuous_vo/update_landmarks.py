@@ -73,7 +73,7 @@ def get_candidate_keypoints(state: State, img_new: np.ndarray, print_stats: bool
         # distances is an #keypoints_new x #state.P
         distances: np.ndarray = cdist(keypoints_new, state.P.T, metric="cityblock")
         # for each new point, find closest old eg. min along rows
-        mins: np.ndarray = np.argmin(distances, axis=1)
+        mins: np.ndarray = np.min(distances, axis=1)
         # create mask where min distance > params.EQUAL_KEYPOINT_THRESHOLD
         mask: np.ndarray = mins > params.EQUAL_KEYPOINT_THRESHOLD
 
@@ -160,7 +160,7 @@ def get_updated_keypoints(
         # distances is an size(arg1) x size(arg2) array
         distances: np.ndarray = cdist(new_keypoints, RANSAC_inlier_new, metric="cityblock")
         # for each new point, find closest old eg. min along rows
-        mins: np.ndarray = np.argmin(distances, axis=1)
+        mins: np.ndarray = np.min(distances, axis=1)
         # create mask where min distance < params.EQUAL_KEYPOINT_THRESHOLD
         mask: np.ndarray = mins > params.EQUAL_KEYPOINT_THRESHOLD
 
@@ -176,7 +176,7 @@ def get_updated_keypoints(
                 f"{state.C.shape[1]-status.sum()} rejected by KLT. {status.sum()-inlier_mask.sum()} rejected by RANSAC."
             )
             print(f"UPDATE LANDMARKS: {new_C.shape[0]}/{new_keypoints.shape[0]} candidates added new.")
-        plot_image_and_points(img_new, tracked_C, new_C, new_keypoints[mask==False, :])
+        # plot_image_and_points(img_new, tracked_C, new_C, new_keypoints[mask==False, :])
     else:
         tracked_C = np.zeros((0, 2))
         tracked_F = np.zeros((0, 2))
@@ -235,8 +235,8 @@ def triangulate_candidates(
     # assumption: larger angle => better landmark to start tracking
     # take the num_to_add largest angles, set the rest to zero
     # This gets points close to the camera.
-    # small_indices = np.argsort(angles)[: (angles.shape[0] - num_to_add)]
-    # angles[small_indices] = 0
+    small_indices = np.argsort(angles)[: (angles.shape[0] - num_to_add)]
+    angles[small_indices] = 0
 
     # now filter to make sure we only have valid ones
     mask = np.rad2deg(angles) > params.TRIANGULATION_ANGLE_THRESHOLD
@@ -340,7 +340,7 @@ def plot_image_and_points(image, points1, points2, points3):
     if len(points2) > 0:
         ax.scatter(points2[:, 0], points2[:, 1], color='lime', label='Added new',s=4)
     if len(points3) > 0:
-        ax.scatter(points2[:, 0], points2[:, 1], color='red', label='Rejected new',s=4)
+        ax.scatter(points3[:, 0], points3[:, 1], color='red', label='Rejected new',s=4)
 
     # Add labels and legend
     plt.xlabel('X-axis')
