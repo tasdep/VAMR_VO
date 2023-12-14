@@ -85,7 +85,7 @@ POSE_RANSAC_CONFIDENCE = 0.999
 # threshold to determine whether a newly detected keypoint is the same as a currently tracked one
 # eg. when comparing candidate keypoints to state.P
 # value is a pixel radius
-EQUAL_KEYPOINT_THRESHOLD = 2.1
+EQUAL_KEYPOINT_THRESHOLD = 8.0
 
 # minimum 'distance' between matches for them to be equal
 MATCH_DISTANCE_THRESHOLD = 300
@@ -94,6 +94,8 @@ MATCH_DISTANCE_THRESHOLD = 300
 TRIANGULATION_ANGLE_THRESHOLD = 10  # [deg]
 
 # number of landmarks to maintain
-NUM_LANDMARKS_GOAL = 400
+NUM_LANDMARKS_GOAL = 500
 
-LIMIT_NEW_LANDMARKS = 30
+LIMIT_NEW_LANDMARKS = 100
+
+OUTLIER_3D_REJECTION_SIGMA = 4.0
