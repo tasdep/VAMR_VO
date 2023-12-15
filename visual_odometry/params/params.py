@@ -40,12 +40,10 @@ SKIP_BOOTSTRAP = False
 # Which frames from the input to use for bootstrapping initial features.
 BOOTSRAP_FRAMES = [0, 3]
 
-HARRIS_BLOCK_SIZE = 9
-HARRIS_SOBEL_SIZE = 3
-# Magic number in harris algo
-HARRIS_K = 0.1
+HARRIS_BLOCK_SIZE = 3
 HARRIS_MAX_CORNERS = 1000
 HARRIS_MIN_DISTANCE = 10.0
+HARRIS_QUALITY_LEVEL = 0.01
 
 # after harris corner detector to threshold which points are corners
 KEYPOINT_THRESHOLD = 0.2

@@ -19,10 +19,10 @@ def run_harris_detector(
     - A Nx2 array containing N keypoint coordinates (column, row) or (x,y) where corners are detected.
     """
     detector_params = {
-        "maxCorners": 1000,
-        "qualityLevel": 0.01,
-        "minDistance": 10,
-        "blockSize": 3,
+        "maxCorners": params.HARRIS_MAX_CORNERS,
+        "qualityLevel": params.HARRIS_QUALITY_LEVEL,
+        "minDistance": params.HARRIS_MIN_DISTANCE,
+        "blockSize": params.HARRIS_BLOCK_SIZE,
     }
 
     # cv2.goodfeaturestotrackwithquality also returns the quality scores of the detected corners
