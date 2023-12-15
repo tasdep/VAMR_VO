@@ -16,12 +16,12 @@ DATASET = Dataset.DATASET2
 # to visualise use cmd line tool snakeviz "snakeviz *.stats"
 DO_PROFILING = False
 
-# wait for arrow key to advance to next frame
-WAIT_ARROW = True
+# wait for arrow key to advance to next frame, if false then just go straight to the next frame
+WAIT_ARROW = False
 
 # Whether to visualize the global point cloud or just the
 # actively tracked point cloud.
-GLOBAL_POINT_CLOUD = False
+GLOBAL_POINT_CLOUD = True
 
 
 # limit the number of frames

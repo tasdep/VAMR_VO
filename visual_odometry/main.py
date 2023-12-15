@@ -167,7 +167,8 @@ def update_visualization(
     if params.WAIT_ARROW:
         fig.canvas.start_event_loop(timeout=-1)
     else:
-        plt.waitforbuttonpress()  # Wait for keyboard input
+        # do nothing since we are going to compute the next frame
+        pass
 
 
 def image_generator(folder_path):
@@ -274,16 +275,14 @@ if __name__ == "__main__":
         # Set a consistent orientation
         ax2.view_init(elev=-70, azim=-90)
         # setup plot event
-        if params.WAIT_ARROW:
-
-            def on_key(event):
-                if event.key == "right":
-                    print("Right arrow key pressed.")
-                    fig.canvas.stop_event_loop()
-                elif event.key == "escape":
-                    print("Esc key pressed.")
-                    plt.close("all")
-                    exit(0)
+        def on_key(event):
+            if event.key == "right" and params.WAIT_ARROW:
+                print("Right arrow key pressed.")
+                fig.canvas.stop_event_loop()
+            elif event.key == "escape":
+                print("Esc key pressed.")
+                plt.close("all")
+                exit(0)
 
             plt.connect("key_press_event", on_key)
 
