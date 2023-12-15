@@ -257,10 +257,6 @@ def triangulate_candidates(
     small_indices = np.argsort(angles)[: (angles.shape[0] - num_to_add)]
     angles[small_indices] = 0
 
-    # shuffled = np.random.permutation(angles.shape[0])
-    # angles = angles[shuffled]
-    # angles[: (angles.shape[0] - num_to_add)] = 0
-
     # now filter to make sure we only have valid ones
     mask = np.rad2deg(angles) > params.TRIANGULATION_ANGLE_THRESHOLD
 
