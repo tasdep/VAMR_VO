@@ -1,6 +1,9 @@
+import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
+import params.params as params
 
 
 def drawCamera(

@@ -9,7 +9,7 @@ class Dataset(Enum):
     DATASET4 = "Ransac exercise"
 
 
-DATASET = Dataset.DATASET2
+DATASET = Dataset.DATASET4
 
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'
@@ -17,12 +17,12 @@ DATASET = Dataset.DATASET2
 DO_PROFILING = False
 
 # wait for arrow key to advance to next frame
-WAIT_ARROW = False
+WAIT_ARROW = True
 
 
 # limit the number of frames
 LIMIT_FRAME_COUNT = True
-FRAME_LIMIT = 100
+FRAME_LIMIT = 1000
 
 ################################################################
 # Params for 3 - Initialization #

@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
+
 from pathlib import Path
 import os
 import cProfile
@@ -16,12 +17,10 @@ from continuous_vo.estimating_current_pose import estimating_current_pose
 from continuous_vo.update_landmarks import update_landmarks
 
 from utils.state import State
-from utils.utils import create_homogeneous_matrix, get_camera_pos_in_world
+from utils.utils import create_homogeneous_matrix
 from utils.visualisation import drawCamera
 
 
-# RED = Candidates
-# GREEN = Landmarks
 def update_visualization(
     fig,
     ax1,
@@ -31,12 +30,14 @@ def update_visualization(
     state,
     previous_keypoint_locations,
     current_locations,
+    global_point_cloud,
     R,
     t,
     camera_pose_history,
     num_added_landmarks,
     idx,
 ):
+    """The main visualization function for the pipeline."""
     # Update Plot 1: Current image with keypoints
     ax1.clear()
     ax1.set_title(f"Image {idx}. With {num_added_landmarks} new landmarks")
@@ -50,9 +51,7 @@ def update_visualization(
         p1 = (int(p1[0]), int(p1[1]))
         p2 = (int(p2[0]), int(p2[1]))
 
-        cv2.circle(
-            current_image, p1, 5, (0, 0, 255), -1
-        )  # Blue for previous keypointsß
+        cv2.circle(current_image, p1, 5, (0, 0, 255), -1)  # Blue for previous keypoints
         cv2.circle(current_image, p2, 5, color, -1)  # Green for new keypoints
         cv2.line(current_image, p1, p2, color, 2)  # line to indicate movement
 
@@ -122,7 +121,11 @@ def update_visualization(
     ax2.set_xlabel("X axis")
     ax2.set_ylabel("Y axis")
     ax2.set_zlabel("Z axis")
-    ax2.scatter(state.X[0, :], state.X[1, :], state.X[2, :])
+    # ax2.scatter(state.X[0, :], state.X[1, :], state.X[2, :])
+    global_x = [point[0] for point in global_point_cloud]
+    global_y = [point[1] for point in global_point_cloud]
+    global_z = [point[2] for point in global_point_cloud]
+    ax2.scatter(global_x, global_y, global_z, s=2)
     drawCamera(
         ax2,
         (-R.T @ t).ravel(),
@@ -132,18 +135,17 @@ def update_visualization(
         equal_axis=False,
         set_ax_limits=False,
     )
-    ax2.axis("equal")
-
-    # Set a consistent orientation
-    ax2.view_init(elev=-70, azim=-90)
-    # Set fixed limits for the axes
-    # You need to mess with this depending on the dataset.
-    # ax2.set_xlim([-100, 100])
-    # ax2.set_ylim([-100, 100])
-    # ax2.set_zlim([-100, 100])
+    ax2.set_box_aspect((np.ptp(global_x), np.ptp(global_y), np.ptp(global_z)))
 
     # Add a marker for the origin
     ax2.scatter([0], [0], [0], color="k", marker="o")  # Black dot at the origin
+
+    ax2.plot(
+        camera_pose_history[0, :],
+        camera_pose_history[1, :],
+        camera_pose_history[2, :],
+        color="red",
+    )  # Line plot
 
     # Update Plot 3: 2D Camera Pose History
     ax3.clear()
@@ -226,6 +228,7 @@ if __name__ == "__main__":
         keypoints = np.loadtxt(
             (base_path / "../local_data/test_data/keypoints.txt").resolve()
         ).T
+        keypoints = keypoints[[1, 0], :]
         p_W_landmarks = np.loadtxt(
             (base_path / "../local_data/test_data/p_W_landmarks.txt").resolve()
         ).T
@@ -284,6 +287,7 @@ if __name__ == "__main__":
     generator = image_generator(folder_path)
 
     camera_pose_history = np.zeros((3, len(os.listdir(folder_path))))
+    global_point_cloud: set[tuple[float, float, float]] = set()
     prev_image = None
     R = None
     t = None
@@ -315,6 +319,9 @@ if __name__ == "__main__":
         )
         added_landmarks = current_state.P.shape[1] - num_landmarks
         if not params.DO_PROFILING:
+            # Update the global point cloud
+            for point in current_state.X.T:
+                global_point_cloud.add((point[0], point[1], point[2]))
             update_visualization(
                 fig,
                 ax1,
@@ -324,12 +331,14 @@ if __name__ == "__main__":
                 current_state,
                 previous_keypoint_locations,
                 current_locations,
+                global_point_cloud,
                 R,
                 t,
                 camera_pose_history[:, : min(camera_pose_history.shape[1], idx + 1)],
                 added_landmarks,
                 idx,
             )
+
         prev_image = new_image
 
     if params.DO_PROFILING:
