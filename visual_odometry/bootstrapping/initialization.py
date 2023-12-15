@@ -163,13 +163,26 @@ def initialize_pipeline(
         print(f"{n} points triangulated behind camera during initialisation")
     X = X[:, mask]
     # 2D
-    P: np.ndarray = inlier_pts_2.T[:, mask]
+    P: np.ndarray = inlier_pts_1.T[:, mask]
 
     # Visualisation
     if visualise:
         visualise_pose_and_landmarks(
             R_correct, t_correct, img_1, img_2, X, inlier_pts_1, inlier_pts_2
         )
+
+    # Remove major outliers
+    means = np.mean(X, axis=1)
+    stds = np.std(X, axis=1)
+    for point_3D in X.T:
+        z_score = np.average(np.abs((point_3D.T - means) / stds))
+        if z_score > params.OUTLIER_3D_REJECTION_SIGMA:
+            if print_stats:
+                print(
+                    f"INITIALIZATION: rejecting triangulated new keypoint \n"
+                    f"{point_3D} \nbecause it is an outlier from the rest of state.X"
+                )
+            continue
 
     # initialise the pipeline object with the keypoints and landmarks
     # note: C,F,T are blank as there are no candidates at this point

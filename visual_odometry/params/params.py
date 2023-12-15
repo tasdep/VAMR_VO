@@ -19,10 +19,14 @@ DO_PROFILING = False
 # wait for arrow key to advance to next frame
 WAIT_ARROW = True
 
+# Whether to visualize the global point cloud or just the
+# actively tracked point cloud.
+GLOBAL_POINT_CLOUD = False
+
 
 # limit the number of frames
 LIMIT_FRAME_COUNT = True
-FRAME_LIMIT = 100
+FRAME_LIMIT = 1000
 
 ################################################################
 # Params for 3 - Initialization #
@@ -36,10 +40,10 @@ SKIP_BOOTSTRAP = False
 # Which frames from the input to use for bootstrapping initial features.
 BOOTSRAP_FRAMES = [0, 3]
 
-HARRIS_BLOCK_SIZE = 9
-HARRIS_SOBEL_SIZE = 3
-# Magic number in harris algo
-HARRIS_K = 0.1
+HARRIS_BLOCK_SIZE = 3
+HARRIS_MAX_CORNERS = 1000
+HARRIS_MIN_DISTANCE = 10.0
+HARRIS_QUALITY_LEVEL = 0.01
 
 # after harris corner detector to threshold which points are corners
 KEYPOINT_THRESHOLD = 0.2
@@ -48,6 +52,8 @@ DESC_PATCH_RAD = 3
 
 RANSAC_REPROJ_THRESH = 0.5
 RANSAC_CONFIDENCE = 0.999
+
+OUTLIER_3D_REJECTION_SIGMA = 3.0
 
 
 ################################################################
@@ -91,11 +97,9 @@ EQUAL_KEYPOINT_THRESHOLD = 8.0
 MATCH_DISTANCE_THRESHOLD = 300
 
 # threshold for angle between camera poses to add candidate to landmark set
-TRIANGULATION_ANGLE_THRESHOLD = 10  # [deg]
+TRIANGULATION_ANGLE_THRESHOLD = 5  # [deg]
 
 # number of landmarks to maintain
 NUM_LANDMARKS_GOAL = 500
 
 LIMIT_NEW_LANDMARKS = 100
-
-OUTLIER_3D_REJECTION_SIGMA = 4.0
