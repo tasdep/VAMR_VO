@@ -184,6 +184,8 @@ def image_generator(folder_path):
     for filename in sorted(os.listdir(folder_path)):
         if filename.endswith((".jpg", ".jpeg", ".png", ".gif")):
             idx += 1
+            if idx < params.START_IMG_IDX:
+                continue
             image_path = os.path.join(folder_path, filename)
             image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
             color_image = cv2.imread(image_path, cv2.IMREAD_COLOR)

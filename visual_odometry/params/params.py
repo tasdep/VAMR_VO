@@ -10,6 +10,8 @@ class Dataset(Enum):
 
 
 DATASET = Dataset.DATASET2
+# Which image to begin on in the dataset
+START_IMG_IDX = 155
 
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'
