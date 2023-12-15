@@ -19,6 +19,10 @@ DO_PROFILING = False
 # wait for arrow key to advance to next frame
 WAIT_ARROW = True
 
+# Whether to visualize the global point cloud or just the
+# actively tracked point cloud.
+GLOBAL_POINT_CLOUD = False
+
 
 # limit the number of frames
 LIMIT_FRAME_COUNT = True

@@ -121,11 +121,18 @@ def update_visualization(
     ax2.set_xlabel("X axis")
     ax2.set_ylabel("Y axis")
     ax2.set_zlabel("Z axis")
-    # ax2.scatter(state.X[0, :], state.X[1, :], state.X[2, :])
-    global_x = [point[0] for point in global_point_cloud]
-    global_y = [point[1] for point in global_point_cloud]
-    global_z = [point[2] for point in global_point_cloud]
-    ax2.scatter(global_x, global_y, global_z, s=2)
+
+    if params.GLOBAL_POINT_CLOUD:
+        global_x = [point[0] for point in global_point_cloud]
+        global_y = [point[1] for point in global_point_cloud]
+        global_z = [point[2] for point in global_point_cloud]
+        ax2.scatter(global_x, global_y, global_z, s=2)
+        ax2.set_box_aspect((np.ptp(global_x), np.ptp(global_y), np.ptp(global_z)))
+    else:
+        ax2.scatter(state.X[0, :], state.X[1, :], state.X[2, :])
+        ax2.set_box_aspect(
+            (np.ptp(state.X[0, :]), np.ptp(state.X[1, :]), np.ptp(state.X[2, :]))
+        )
     drawCamera(
         ax2,
         (-R.T @ t).ravel(),
@@ -135,7 +142,6 @@ def update_visualization(
         equal_axis=False,
         set_ax_limits=False,
     )
-    ax2.set_box_aspect((np.ptp(global_x), np.ptp(global_y), np.ptp(global_z)))
 
     # Add a marker for the origin
     ax2.scatter([0], [0], [0], color="k", marker="o")  # Black dot at the origin
@@ -320,8 +326,9 @@ if __name__ == "__main__":
         added_landmarks = current_state.P.shape[1] - num_landmarks
         if not params.DO_PROFILING:
             # Update the global point cloud
-            for point in current_state.X.T:
-                global_point_cloud.add((point[0], point[1], point[2]))
+            if params.GLOBAL_POINT_CLOUD:
+                for point in current_state.X.T:
+                    global_point_cloud.add((point[0], point[1], point[2]))
             update_visualization(
                 fig,
                 ax1,
