@@ -9,7 +9,7 @@ class Dataset(Enum):
     DATASET4 = "Ransac exercise"
 
 
-DATASET = Dataset.DATASET4
+DATASET = Dataset.DATASET2
 
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'
@@ -48,6 +48,8 @@ DESC_PATCH_RAD = 3
 
 RANSAC_REPROJ_THRESH = 0.5
 RANSAC_CONFIDENCE = 0.999
+
+OUTLIER_3D_REJECTION_SIGMA = 3.0
 
 
 ################################################################
@@ -97,5 +99,3 @@ TRIANGULATION_ANGLE_THRESHOLD = 5  # [deg]
 NUM_LANDMARKS_GOAL = 500
 
 LIMIT_NEW_LANDMARKS = 100
-
-OUTLIER_3D_REJECTION_SIGMA = 4.0

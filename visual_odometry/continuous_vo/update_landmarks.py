@@ -271,8 +271,6 @@ def triangulate_candidates(
     tri_T = old_state.T[:, mask]
 
     # those above threshold calculate X
-    means = np.mean(old_state.X, axis=1)
-    stds = np.std(old_state.X, axis=1)
     num_successfully_added = 0
     behind_camera = 0
     for i, (C, F, T) in enumerate(zip(tri_C.T, tri_F.T, tri_T.T)):
@@ -281,15 +279,6 @@ def triangulate_candidates(
         )
         if not mask.all():
             behind_camera += 1
-            continue
-        # See if the landmark is a significant outlier from our existing 3D points.
-        z_score = np.average(np.abs((new_X.T - means) / stds))
-        if z_score > params.OUTLIER_3D_REJECTION_SIGMA:
-            # if print_stats:
-            #     print(
-            #         f"UPDATE LANDMARKS: rejecting triangulated new keypoint \n"
-            #         f"{new_X} \nbecause it is an outlier from the rest of state.X"
-            #     )
             continue
         num_successfully_added += 1
         old_state.add_landmark(C.reshape(2, -1), new_X.reshape(3, -1))
