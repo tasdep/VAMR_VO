@@ -19,7 +19,7 @@ def run_harris_detector(
     - A Nx2 array containing N keypoint coordinates (column, row) or (x,y) where corners are detected.
     """
     detector_params = {
-        "maxCorners": 500,
+        "maxCorners": 1000,
         "qualityLevel": 0.01,
         "minDistance": 10,
         "blockSize": 3,

@@ -163,7 +163,7 @@ def initialize_pipeline(
         print(f"{n} points triangulated behind camera during initialisation")
     X = X[:, mask]
     # 2D
-    P: np.ndarray = inlier_pts_2.T[:, mask]
+    P: np.ndarray = inlier_pts_1.T[:, mask]
 
     # Visualisation
     if visualise:

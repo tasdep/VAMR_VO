@@ -9,7 +9,7 @@ class Dataset(Enum):
     DATASET4 = "Ransac exercise"
 
 
-DATASET = Dataset.DATASET2
+DATASET = Dataset.DATASET4
 
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'
@@ -85,7 +85,7 @@ POSE_RANSAC_CONFIDENCE = 0.999
 # threshold to determine whether a newly detected keypoint is the same as a currently tracked one
 # eg. when comparing candidate keypoints to state.P
 # value is a pixel radius
-EQUAL_KEYPOINT_THRESHOLD = 8.0
+EQUAL_KEYPOINT_THRESHOLD = 16.0
 
 # minimum 'distance' between matches for them to be equal
 MATCH_DISTANCE_THRESHOLD = 300

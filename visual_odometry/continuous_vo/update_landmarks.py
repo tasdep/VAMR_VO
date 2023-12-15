@@ -228,11 +228,13 @@ def triangulate_candidates(
     means = np.mean(old_state.X, axis=1)
     stds = np.std(old_state.X, axis=1)
     num_successfully_added = 0
+    behind_camera = 0
     for i, (C, F, T) in enumerate(zip(tri_C.T, tri_F.T, tri_T.T)):
         new_X, mask = triangulate_points_wrapper(
             T.reshape(4, 4), current_camera_pose.reshape(4, 4), K, F, C
         )
         if not mask.all():
+            behind_camera += 1
             continue
         # See if the landmark is a significant outlier from our existing 3D points.
         z_score = np.average(np.abs((new_X.T - means) / stds))
@@ -249,7 +251,7 @@ def triangulate_candidates(
     if print_stats:
         print(
             f"UPDATE LANDMARKS: Of {old_state.C.shape[1]} candidates, we attempted to add {tri_C.shape[1]} and "
-            f"{num_successfully_added} were triangulated and added to state.(X/P)"
+            f"{num_successfully_added} were triangulated and added to state.(X/P). {behind_camera} were behind the camera."
         )
         print(
             f"UPDATE LANDMARKS: Number of landmarks now tracked is {old_state.P.shape[1]}/{params.NUM_LANDMARKS_GOAL}."

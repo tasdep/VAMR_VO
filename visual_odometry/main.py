@@ -29,6 +29,8 @@ def update_visualization(
     ax3,
     current_image,
     state,
+    previous_keypoint_locations,
+    current_locations,
     R,
     t,
     camera_pose_history,
@@ -38,40 +40,81 @@ def update_visualization(
     # Update Plot 1: Current image with keypoints
     ax1.clear()
     ax1.set_title(f"Image {idx}. With {num_added_landmarks} new landmarks")
-    img_with_keypoints = current_image
     num_old_landmarks = state.P.shape[1] - num_added_landmarks
-    for idx, p in enumerate(state.P.T):
-        color = (0, 255, 0) if idx < num_old_landmarks else (11, 227, 195)
+
+    idx = 0
+    for p1, p2 in zip(previous_keypoint_locations, current_locations):
+        color = (0, 255, 0)
+        idx += 1
+        # Convert to integer tuples
+        p1 = (int(p1[0]), int(p1[1]))
+        p2 = (int(p2[0]), int(p2[1]))
+
+        cv2.circle(
+            current_image, p1, 5, (0, 0, 255), -1
+        )  # Blue for previous keypointsß
+        cv2.circle(current_image, p2, 5, color, -1)  # Green for new keypoints
+        cv2.line(current_image, p1, p2, color, 2)  # line to indicate movement
+
+    for idx, p in enumerate(state.P.T):  # state.P.T[num_old_landmarks:, :]):
+        color = (255, 132, 0) if idx < num_old_landmarks else (255, 0, 0)
         p = p.astype(int)
         cv2.circle(
-            img_with_keypoints,
+            current_image,
             (p[0], p[1]),
             radius=5,
             color=color,
             thickness=-1,
         )
+
     if state.C is not None:
         for c in state.C.T:
             c = c.astype(int)
             cv2.circle(
-                img_with_keypoints,
+                current_image,
                 (c[0], c[1]),
-                radius=3,
-                color=(255, 0, 0),
+                radius=2,
+                color=(50, 168, 155),
                 thickness=-1,
             )
     # Create proxy artists for the legend
     green_circle = Line2D(
-        [0], [0], linestyle="none", marker="o", markersize=10, markerfacecolor=(0, 1, 0)
+        [0], [0], linestyle="none", marker="o", markersize=6, markerfacecolor=(0, 1, 0)
     )
-    blue_circle = Line2D(
-        [0], [0], linestyle="none", marker="o", markersize=10, markerfacecolor=(1, 0, 0)
+    red_circle = Line2D(
+        [0], [0], linestyle="none", marker="o", markersize=6, markerfacecolor=(1, 0, 0)
+    )
+    cyan_circle = Line2D(
+        [0],
+        [0],
+        linestyle="none",
+        marker="o",
+        markersize=3,
+        markerfacecolor=(50 / 255, 168 / 255, 155 / 255),
+    )
+    orange_cricle = Line2D(
+        [0],
+        [0],
+        linestyle="none",
+        marker="o",
+        markersize=6,
+        markerfacecolor=(237 / 255, 137 / 255, 7 / 255),  # Converted to range 0-1
     )
 
     # Add the legend to the plot
-    ax1.legend([green_circle, blue_circle], ["Landmarks", "Candidates"], numpoints=1)
+    ax1.legend(
+        [orange_cricle, green_circle, red_circle, cyan_circle],
+        [
+            "Landmarks tracked in front of cam.",
+            "Landmarks tracked behind cam, remvoed",
+            "Promoted Candidates",
+            "Candidates",
+        ],
+        numpoints=1,
+        fontsize="small",
+    )
 
-    ax1.imshow(img_with_keypoints)
+    ax1.imshow(current_image)
 
     # Update Plot 2: 3D Point Cloud with Camera Pose
     ax2.clear()
@@ -249,7 +292,7 @@ if __name__ == "__main__":
         if prev_image is None:
             prev_image = new_image
             continue
-        track_and_update(
+        previous_keypoint_locations, current_locations = track_and_update(
             current_state,
             prev_image,
             new_image,
@@ -277,6 +320,8 @@ if __name__ == "__main__":
                 ax3,
                 color_image,
                 current_state,
+                previous_keypoint_locations,
+                current_locations,
                 R,
                 t,
                 camera_pose_history[:, : min(camera_pose_history.shape[1], idx + 1)],

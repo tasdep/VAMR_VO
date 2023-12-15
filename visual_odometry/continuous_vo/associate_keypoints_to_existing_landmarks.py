@@ -97,9 +97,14 @@ def track_and_update(
             np.ones((inlier_new.shape[0], 1)),
         )
 
+    print(
+        f"TRACK AND UPDATE: Rejected {state.X.shape[1] - inlier_3D.shape[1]} keypoints out of {state.X.shape[1]}"
+    )
+
     # Update keypoints in the state
     # Transform P back to 2xN format
     state.update_landmarks(inlier_3D, inlier_new.T)
+    return inlier_prev, inlier_new
 
 
 def visualize_keypoint_movement_with_status(
