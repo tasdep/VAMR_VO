@@ -68,11 +68,16 @@ def get_candidate_keypoints(
     """
     # get the new keypoints with harris detector
     # keypoints_new = run_harris_detector(img_new)
-    sift = cv2.SIFT.create(nfeatures=500)
-    sift_keypoints = sift.detect(img_new)
-    keypoints_new = cv2.KeyPoint.convert(sift_keypoints)
-    new_C: np.ndarray
 
+    # sift = cv2.SIFT.create(nfeatures=500)
+    # sift_keypoints = sift.detect(img_new)
+    # keypoints_new = cv2.KeyPoint.convert(sift_keypoints)
+
+    akaze = cv2.AKAZE.create()
+    akaze_keypoints = akaze.detect(img_new)
+    keypoints_new = cv2.KeyPoint.convert(akaze_keypoints)
+
+    new_C: np.ndarray
     # compare each keypoint in P with the new kepoints
     # and only keep those that don't have a match in P
     if state.P is not None:
