@@ -42,7 +42,7 @@ def track_and_update(
         "criteria": params.KLT_CRITERIA,
     }
 
-    # Track the keypoints in the new image, note we transpose the images.
+    # Track the keypoints in the new image
     # new_keypoints.shape = Nx1x2
     new_keypoints, status, _ = cv2.calcOpticalFlowPyrLK(
         prev_image, new_image, prev_keypoints, None, **lk_params
@@ -84,6 +84,8 @@ def track_and_update(
         np.abs(euclidean_distances - euclidean_distances.mean())
         > params.TRACKING_OUTLIER_REJECTION_SIGMA * euclidean_distances.std()
     )
+
+    
     inlier_new = inlier_new[~movement_outliers]  # Shape Nx2
     inlier_prev = inlier_prev[~movement_outliers]  # Shape Nx2
     inlier_3D = inlier_3D[:, ~movement_outliers]  # Shape 3xN

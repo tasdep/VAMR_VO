@@ -134,6 +134,8 @@ def update_visualization(
     )
     ax2.axis("equal")
 
+    # Set a consistent orientation
+    ax2.view_init(elev=-70, azim=-90)
     # Set fixed limits for the axes
     # You need to mess with this depending on the dataset.
     # ax2.set_xlim([-100, 100])

@@ -17,7 +17,7 @@ DATASET = Dataset.DATASET2
 DO_PROFILING = False
 
 # wait for arrow key to advance to next frame
-WAIT_ARROW = True
+WAIT_ARROW = False
 
 
 # limit the number of frames
@@ -85,13 +85,13 @@ POSE_RANSAC_CONFIDENCE = 0.999
 # threshold to determine whether a newly detected keypoint is the same as a currently tracked one
 # eg. when comparing candidate keypoints to state.P
 # value is a pixel radius
-EQUAL_KEYPOINT_THRESHOLD = 16.0
+EQUAL_KEYPOINT_THRESHOLD = 8.0
 
 # minimum 'distance' between matches for them to be equal
 MATCH_DISTANCE_THRESHOLD = 300
 
 # threshold for angle between camera poses to add candidate to landmark set
-TRIANGULATION_ANGLE_THRESHOLD = 10  # [deg]
+TRIANGULATION_ANGLE_THRESHOLD = 5  # [deg]
 
 # number of landmarks to maintain
 NUM_LANDMARKS_GOAL = 500
