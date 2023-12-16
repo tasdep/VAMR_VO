@@ -44,15 +44,11 @@ def update_landmarks(
         new_keypoints,
         print_stats=print_stats,
     )
-    state = triangulate_candidates(
-        state, current_camera_pose, K, print_stats=print_stats
-    )
+    state = triangulate_candidates(state, current_camera_pose, K, print_stats=print_stats)
     return state
 
 
-def get_candidate_keypoints(
-    state: State, img_new: np.ndarray, print_stats: bool = False
-) -> np.ndarray:
+def get_candidate_keypoints(state: State, img_new: np.ndarray, print_stats: bool = False) -> np.ndarray:
     """
     Get candidate keypoints in the new image that are not present in the state and
     generate descriptors.
@@ -67,15 +63,15 @@ def get_candidate_keypoints(
     - new_C: Mx2 matrix of new candidate keypoints.
     """
     # get the new keypoints with harris detector
-    # keypoints_new = run_harris_detector(img_new)
+    keypoints_new = run_harris_detector(img_new)
 
     # sift = cv2.SIFT.create(nfeatures=500)
     # sift_keypoints = sift.detect(img_new)
     # keypoints_new = cv2.KeyPoint.convert(sift_keypoints)
 
-    akaze = cv2.AKAZE.create()
-    akaze_keypoints = akaze.detect(img_new)
-    keypoints_new = cv2.KeyPoint.convert(akaze_keypoints)
+    # akaze = cv2.AKAZE.create()
+    # akaze_keypoints = akaze.detect(img_new)
+    # keypoints_new = cv2.KeyPoint.convert(akaze_keypoints)
 
     new_C: np.ndarray
     # compare each keypoint in P with the new kepoints
@@ -142,9 +138,7 @@ def get_updated_keypoints(
         # new_keypoints.shape = Nx1x2
         old_C = state.C.T.reshape(-1, 1, 2)
         old_C = np.array(old_C, dtype=np.float32)
-        KLT_new_keypoints, status, _ = cv2.calcOpticalFlowPyrLK(
-            img_prev, img_new, old_C, None, **lk_params
-        )
+        KLT_new_keypoints, status, _ = cv2.calcOpticalFlowPyrLK(img_prev, img_new, old_C, None, **lk_params)
 
         # Filter out the keypoints for which tracking was successful
         KLT_tracked_new = KLT_new_keypoints[status == 1]  # Shape: Nx2
@@ -152,9 +146,7 @@ def get_updated_keypoints(
         indices_old_C = indices_old_C[status.ravel() == 1]
 
         # RANSAC tracked points to reduce error
-        _, inlier_mask = cv2.findFundamentalMat(
-            KLT_tracked_prev, KLT_tracked_new, cv2.FM_RANSAC
-        )
+        _, inlier_mask = cv2.findFundamentalMat(KLT_tracked_prev, KLT_tracked_new, cv2.FM_RANSAC)
 
         # filter out points after RANSAC, this leaves points that were succesfully tracked
         # between frames
@@ -173,9 +165,7 @@ def get_updated_keypoints(
         # compare the RANSAC_inlier_new 2D points by location to new_keypoints and only keep those which don't overlap
         # these will form the newly tracked candidates
         # distances is an size(arg1) x size(arg2) array
-        distances: np.ndarray = cdist(
-            new_keypoints, RANSAC_inlier_new, metric="cityblock"
-        )
+        distances: np.ndarray = cdist(new_keypoints, RANSAC_inlier_new, metric="cityblock")
         # for each new point, find closest old eg. min along rows
         mins: np.ndarray = np.min(distances, axis=1)
         # create mask where min distance < params.EQUAL_KEYPOINT_THRESHOLD
@@ -191,9 +181,7 @@ def get_updated_keypoints(
                 f"UPDATE LANDMARKS: {tracked_C.shape[0]}/{state.C.shape[1]} existing candidates updated."
                 f"{state.C.shape[1]-status.sum()} rejected by KLT. {status.sum()-inlier_mask.sum()} rejected by RANSAC."
             )
-            print(
-                f"UPDATE LANDMARKS: {new_C.shape[0]}/{new_keypoints.shape[0]} candidates added new."
-            )
+            print(f"UPDATE LANDMARKS: {new_C.shape[0]}/{new_keypoints.shape[0]} candidates added new.")
         # plot_image_and_points(img_new, tracked_C, new_C, new_keypoints[mask==False, :])
     else:
         tracked_C = np.zeros((0, 2))
@@ -205,9 +193,7 @@ def get_updated_keypoints(
         # camera pose is the same for each
         new_T = np.tile(current_camera_pose, (new_C.shape[0], 1))
         if print_stats:
-            print(
-                f"UPDATE LANDMARKS: No previous candidates, all {new_C.shape[0]} candidates added."
-            )
+            print(f"UPDATE LANDMARKS: No previous candidates, all {new_C.shape[0]} candidates added.")
 
     # transpose to make them 2 X N
     new_C = np.vstack([tracked_C, new_C])
@@ -243,24 +229,25 @@ def triangulate_candidates(
             )
         return old_state
     else:
-        num_to_add: int = min(
-            params.LIMIT_NEW_LANDMARKS, params.NUM_LANDMARKS_GOAL - current_landmarks
-        )
+        num_to_add: int = min(params.LIMIT_NEW_LANDMARKS, params.NUM_LANDMARKS_GOAL - current_landmarks)
 
     angles: np.ndarray = np.zeros((old_state.C.shape[1]))
     # do projections
-    for i, (C, F, T) in enumerate(zip(old_state.C.T, old_state.F.T, old_state.T.T)):
-        v_orig = unit_vector_to_pixel_in_world(K, T.reshape((4, 4)), F)
-        v_curr = unit_vector_to_pixel_in_world(
-            K, current_camera_pose.reshape((4, 4)), C
-        )
-        angles[i] = angle_between_units(v_orig, v_curr)
+    # vectorised approach to finding angles
+    v_orig = unit_vector_to_pixel_in_world(K, old_state.T.T.reshape((-1, 4, 4)), old_state.F)
+    T_curr_stack = np.tile(current_camera_pose.reshape((4, 4)),(old_state.C.shape[1],1,1)) 
+    v_curr = unit_vector_to_pixel_in_world(K, T_curr_stack, old_state.C)
+    angles = angle_between_units(v_orig, v_curr)
+    # for i, (C, F, T) in enumerate(zip(old_state.C.T, old_state.F.T, old_state.T.T)):
+    #     v_orig = unit_vector_to_pixel_in_world(K, T.reshape((4, 4)), F)
+    #     v_curr = unit_vector_to_pixel_in_world(K, current_camera_pose.reshape((4, 4)), C)
+    #     angles[i] = angle_between_units(v_orig, v_curr)
 
     # assumption: larger angle => better landmark to start tracking
     # take the num_to_add largest angles, set the rest to zero
     # This gets points close to the camera.
-    small_indices = np.argsort(angles)[: (angles.shape[0] - num_to_add)]
-    angles[small_indices] = 0
+    # small_indices = np.argsort(angles)[: (angles.shape[0] - num_to_add)]
+    # angles[small_indices] = 0
 
     # now filter to make sure we only have valid ones
     mask = np.rad2deg(angles) > params.TRIANGULATION_ANGLE_THRESHOLD
@@ -279,9 +266,7 @@ def triangulate_candidates(
     num_successfully_added = 0
     behind_camera = 0
     for i, (C, F, T) in enumerate(zip(tri_C.T, tri_F.T, tri_T.T)):
-        new_X, mask = triangulate_points_wrapper(
-            T.reshape(4, 4), current_camera_pose.reshape(4, 4), K, F, C
-        )
+        new_X, mask = triangulate_points_wrapper(T.reshape(4, 4), current_camera_pose.reshape(4, 4), K, F, C)
         if not mask.all():
             behind_camera += 1
             continue
@@ -293,9 +278,7 @@ def triangulate_candidates(
             f"UPDATE LANDMARKS: Of {old_state.C.shape[1]} candidates, we attempted to add {tri_C.shape[1]} and "
             f"{num_successfully_added} were triangulated and added to state.(X/P). {behind_camera} were behind the camera."
         )
-        print(
-            f"UPDATE LANDMARKS: Number of landmarks now tracked is {old_state.P.shape[1]}/{params.NUM_LANDMARKS_GOAL}."
-        )
+        print(f"UPDATE LANDMARKS: Number of landmarks now tracked is {old_state.P.shape[1]}/{params.NUM_LANDMARKS_GOAL}.")
 
     # TODO refine X estimate with non linear optimisation
     # move candidate to X,P in state
@@ -303,38 +286,39 @@ def triangulate_candidates(
     return old_state
 
 
-def unit_vector_to_pixel_in_world(
-    K: np.ndarray, T: np.ndarray, pixel: np.ndarray
-) -> np.ndarray:
+def unit_vector_to_pixel_in_world(K: np.ndarray, T: np.ndarray, pixel: np.ndarray) -> np.ndarray:
     """
     Convert pixel coordinates to unit vector in world coordinates.
 
     Parameters:
     - K:  3X3 camera intrinsic matrix
-    - T: (3/4)X4 camera pose transform matrix
-    - pixel: 2X1 pixel coordinates in the image
+    - T: NX4X4 camera pose transform matrix
+    - pixel: 2XN pixel coordinates in the image
 
     Returns:
-    - Unit vector in world coordinates.
+    - 3XN array of unit vectors in world coordinates.
     """
     # extract rot matrix
-    R = T[0:3, 0:3]
+    R = T[:, 0:3, 0:3]  # shape Nx3x3
     # Inverse of the camera matrix
     K_inv = np.linalg.inv(K)
 
     # Convert from pixel coordinates to camera coords,
     # vector from camera base to the point in camera coordinates
-    ndc_homogeneous = np.hstack((pixel, 1))
+    ndc_homogeneous = np.vstack((pixel, np.ones(pixel.shape[1])))
     direction_camera_coordinates = np.dot(K_inv, ndc_homogeneous)
 
     # normalise the vector because we only care about direction
-    vector_camera_coordinates = direction_camera_coordinates / np.linalg.norm(
-        direction_camera_coordinates
-    )
-
+    vector_camera_coordinates = direction_camera_coordinates / np.linalg.norm(direction_camera_coordinates, axis=0)  # shape
+    # R = Nx3x3
+    # vector_cam_coords = 3XN
     # Transform to world coordinates
-    vector_world_coordinates = np.dot(R.T, vector_camera_coordinates)
+    # goal shape = 3, 405
 
+    # vector_world_coordinates = np.dot(R.T, vector_camera_coordinates)
+    vector_world_coordinates = np.einsum('nik,kn->in', R.transpose((0,2,1)), vector_camera_coordinates)
+
+    assert(vector_world_coordinates.shape == (3,pixel.shape[1]))
     return vector_world_coordinates
 
 
@@ -343,13 +327,13 @@ def angle_between_units(v1: np.ndarray, v2: np.ndarray):
     Calculate the angle between two unit vectors. Both in n dimensions.
 
     Parameters:
-    - v1: First unit vector.
-    - v2: Second unit vector.
+    - v1: First unit vector array 3XN
+    - v2: Second unit vector array 3XN
 
     Returns:
     - Angle between the two unit vectors in radians.
     """
-    return np.arccos(np.clip(np.dot(v1, v2), -1.0, 1.0))
+    return np.arccos(np.clip(np.einsum('ik,ik->k', v1,v2), -1.0, 1.0))
 
 
 def plot_image_and_points(image, points1, points2, points3):
