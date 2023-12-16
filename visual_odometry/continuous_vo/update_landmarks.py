@@ -69,8 +69,14 @@ def get_candidate_keypoints(
     # get the new keypoints with harris detector
     # keypoints_new = run_harris_detector(img_new)
     sift = cv2.SIFT.create(nfeatures=500)
-    sift_keypoints = sift.detect(img_new)
+    equalized_image = cv2.equalizeHist(img_new)
+    sift_keypoints = sift.detect(equalized_image)
     keypoints_new = cv2.KeyPoint.convert(sift_keypoints)
+
+    # akaze = cv2.AKAZE.create()
+    # akaze_keypoints = akaze.detect(img_new)
+    # keypoints_new = cv2.KeyPoint.convert(akaze_keypoints)
+
     new_C: np.ndarray
 
     # compare each keypoint in P with the new kepoints
@@ -254,8 +260,20 @@ def triangulate_candidates(
     # assumption: larger angle => better landmark to start tracking
     # take the num_to_add largest angles, set the rest to zero
     # This gets points close to the camera.
-    small_indices = np.argsort(angles)[: (angles.shape[0] - num_to_add)]
-    angles[small_indices] = 0
+    small_indices = np.argsort(angles)  # [: (angles.shape[0] - num_to_add)]
+    # angles[small_indices] = 0
+
+    # Prioritize candidates that are further away from existing landmarks,
+    # for better image coverage.
+    distances: np.ndarray = cdist(old_state.P.T, old_state.C.T, metric="cityblock")
+    # for each point, find closest old eg. min along rows
+    means: np.ndarray = distances.mean(axis=0)
+    close_to_landmarks_indices = np.argsort(means)  # [: (angles.shape[0] - num_to_add)]
+    # angles[close_to_landmarks_indices] = 0
+
+    combined_rank = small_indices + close_to_landmarks_indices
+    rank_indices = np.argsort(combined_rank)[: (angles.shape[0] - num_to_add)]
+    angles[rank_indices] = 0
 
     # now filter to make sure we only have valid ones
     mask = np.rad2deg(angles) > params.TRIANGULATION_ANGLE_THRESHOLD
@@ -270,6 +288,10 @@ def triangulate_candidates(
     tri_F = old_state.F[:, mask]
     tri_T = old_state.T[:, mask]
 
+    # Remove major outliers
+    means = np.mean(old_state.X, axis=1)
+    stds = np.std(old_state.X, axis=1)
+
     # those above threshold calculate X
     num_successfully_added = 0
     behind_camera = 0
@@ -277,6 +299,14 @@ def triangulate_candidates(
         new_X, mask = triangulate_points_wrapper(
             T.reshape(4, 4), current_camera_pose.reshape(4, 4), K, F, C
         )
+        z_score = np.average(np.abs((new_X.T - means) / stds))
+        if z_score > params.OUTLIER_3D_REJECTION_SIGMA:
+            if print_stats:
+                print(
+                    f"INITIALIZATION: rejecting triangulated new keypoint \n"
+                    f"{new_X} \nbecause it is an outlier from the rest of state.X"
+                )
+            continue
         if not mask.all():
             behind_camera += 1
             continue
