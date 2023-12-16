@@ -112,7 +112,7 @@ def update_visualization(
         numpoints=1,
         fontsize="small",
     )
-
+    # equalized_image = cv2.equalizeHist(current_image)
     ax1.imshow(current_image)
 
     # Update Plot 2: 3D Point Cloud with Camera Pose
@@ -159,6 +159,13 @@ def update_visualization(
     ax3.set_xlabel("X axis")
     ax3.set_ylabel("Z axis")
     ax3.plot(camera_pose_history[0, :], camera_pose_history[2, :])
+    ax3.scatter(
+        camera_pose_history[0, -1],
+        camera_pose_history[2, -1],
+        color="g",
+        marker="o",
+        s=4,
+    )  # Marker for current camera location
     ax3.set_aspect("equal")
     ax3.autoscale(enable=True, axis="both")
 
@@ -316,7 +323,9 @@ if __name__ == "__main__":
         # fig_cp, ax_cp = plt.subplots()
         # figure = fig_cp
         # image = color_image
-        R, t = estimating_current_pose(current_state, K, visualization=False)
+        R, t = estimating_current_pose(
+            current_state, K, visualization=False, refine_with_DLT=params.REFINE_POSE
+        )
         curr_pose: np.ndarray = create_homogeneous_matrix(R, t).flatten()
         # convert t to world frame for plotting
         t_W = -R.T @ t
