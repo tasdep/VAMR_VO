@@ -238,10 +238,6 @@ def triangulate_candidates(
     T_curr_stack = np.tile(current_camera_pose.reshape((4, 4)),(old_state.C.shape[1],1,1)) 
     v_curr = unit_vector_to_pixel_in_world(K, T_curr_stack, old_state.C)
     angles = angle_between_units(v_orig, v_curr)
-    # for i, (C, F, T) in enumerate(zip(old_state.C.T, old_state.F.T, old_state.T.T)):
-    #     v_orig = unit_vector_to_pixel_in_world(K, T.reshape((4, 4)), F)
-    #     v_curr = unit_vector_to_pixel_in_world(K, current_camera_pose.reshape((4, 4)), C)
-    #     angles[i] = angle_between_units(v_orig, v_curr)
 
     # assumption: larger angle => better landmark to start tracking
     # take the num_to_add largest angles, set the rest to zero

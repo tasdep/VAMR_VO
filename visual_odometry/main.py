@@ -193,7 +193,7 @@ def image_generator(folder_path):
             yield idx, filename, image, color_image
 
 
-if __name__ == "__main__":
+def main_loop():
     ###############################
     # Load data                   #
     ###############################
@@ -258,14 +258,12 @@ if __name__ == "__main__":
             images, K, visualise=False, print_stats=True
         )
 
-    ###############################
-    # Continuous Visual Odometry  #
-    ###############################
 
-    if params.DO_PROFILING:
-        profiler = cProfile.Profile()
-        profiler.enable()
-    else:
+    ###############################
+    # Setup visualiser  #
+    ###############################
+    
+    if not params.DO_PROFILING:
         # Initialize visualization
         # Create a figure and subplots outside the function
         plt.ion()  # Turn on interactive mode
@@ -287,6 +285,11 @@ if __name__ == "__main__":
                 exit(0)
 
             plt.connect("key_press_event", on_key)
+
+    ###############################
+    # Continuous Visual Odometry  #
+    ###############################
+            
 
     current_state: State = initial_state
     prev_image: np.ndarray = None
@@ -348,6 +351,14 @@ if __name__ == "__main__":
             )
 
         prev_image = new_image
+
+
+if __name__ == "__main__":
+    if params.DO_PROFILING:
+        profiler = cProfile.Profile()
+        profiler.enable()
+
+    main_loop()
 
     if params.DO_PROFILING:
         profiler.disable()
