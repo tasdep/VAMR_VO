@@ -87,6 +87,8 @@ POSE_RANSAC_REPROJECTION_ERROR = 10.0
 # The probability that the algorithm produces a useful result. Default: 0.99
 POSE_RANSAC_CONFIDENCE = 0.999
 
+REFINE_POSE = False
+
 ################################################################
 # Params for 4.3 - Associating keypoints to exisitng landmarks #
 ################################################################
@@ -96,7 +98,7 @@ POSE_RANSAC_CONFIDENCE = 0.999
 EQUAL_KEYPOINT_THRESHOLD = 8.0
 
 # threshold for angle between camera poses to add candidate to landmark set
-TRIANGULATION_ANGLE_THRESHOLD = 3  # [deg]
+TRIANGULATION_ANGLE_THRESHOLD = 0.1  # [deg]
 
 # number of landmarks to maintain
 NUM_LANDMARKS_GOAL = 500
