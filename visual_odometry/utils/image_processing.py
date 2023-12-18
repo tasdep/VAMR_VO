@@ -75,7 +75,7 @@ def patch_describe_keypoints(
     return descriptors
 
 
-def triangulate_points_wrapper(
+def  triangulate_points_wrapper(
     T1: np.ndarray,
     T2: np.ndarray,
     K: np.ndarray,

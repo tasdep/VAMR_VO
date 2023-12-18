@@ -174,7 +174,8 @@ def update_visualization(
     if params.WAIT_ARROW:
         fig.canvas.start_event_loop(timeout=-1)
     else:
-        plt.waitforbuttonpress()  # Wait for keyboard input
+        # do nothing since we are going to compute the next frame
+        pass
 
 
 def image_generator(folder_path):
@@ -199,7 +200,7 @@ def image_generator(folder_path):
             yield idx, filename, image, color_image
 
 
-if __name__ == "__main__":
+def main_loop():
     ###############################
     # Load data                   #
     ###############################
@@ -264,14 +265,12 @@ if __name__ == "__main__":
             images, K, visualise=False, print_stats=True
         )
 
-    ###############################
-    # Continuous Visual Odometry  #
-    ###############################
 
-    if params.DO_PROFILING:
-        profiler = cProfile.Profile()
-        profiler.enable()
-    else:
+    ###############################
+    # Setup visualiser  #
+    ###############################
+    
+    if not params.DO_PROFILING:
         # Initialize visualization
         # Create a figure and subplots outside the function
         plt.ion()  # Turn on interactive mode
@@ -283,18 +282,21 @@ if __name__ == "__main__":
         # Set a consistent orientation
         ax2.view_init(elev=-70, azim=-90)
         # setup plot event
-        if params.WAIT_ARROW:
-
-            def on_key(event):
-                if event.key == "right":
-                    print("Right arrow key pressed.")
-                    fig.canvas.stop_event_loop()
-                elif event.key == "escape":
-                    print("Esc key pressed.")
-                    plt.close("all")
-                    exit(0)
+        def on_key(event):
+            if event.key == "right" and params.WAIT_ARROW:
+                print("Right arrow key pressed.")
+                fig.canvas.stop_event_loop()
+            elif event.key == "escape":
+                print("Esc key pressed.")
+                plt.close("all")
+                exit(0)
 
             plt.connect("key_press_event", on_key)
+
+    ###############################
+    # Continuous Visual Odometry  #
+    ###############################
+            
 
     current_state: State = initial_state
     prev_image: np.ndarray = None
@@ -358,6 +360,14 @@ if __name__ == "__main__":
             )
 
         prev_image = new_image
+
+
+if __name__ == "__main__":
+    if params.DO_PROFILING:
+        profiler = cProfile.Profile()
+        profiler.enable()
+
+    main_loop()
 
     if params.DO_PROFILING:
         profiler.disable()

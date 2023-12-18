@@ -11,15 +11,15 @@ class Dataset(Enum):
 
 DATASET = Dataset.DATASET2
 # Which image to begin on in the dataset
-START_IMG_IDX = 100
+START_IMG_IDX = 0
 
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'
 # to visualise use cmd line tool snakeviz "snakeviz *.stats"
-DO_PROFILING = False
+DO_PROFILING = True
 
-# wait for arrow key to advance to next frame
-WAIT_ARROW = True
+# wait for arrow key to advance to next frame, if false then just go straight to the next frame
+WAIT_ARROW = False
 
 # Whether to visualize the global point cloud or just the
 # actively tracked point cloud.
@@ -28,7 +28,7 @@ GLOBAL_POINT_CLOUD = False
 
 # limit the number of frames
 LIMIT_FRAME_COUNT = True
-FRAME_LIMIT = 1000
+FRAME_LIMIT = 20
 
 ################################################################
 # Params for 3 - Initialization #
@@ -96,9 +96,6 @@ REFINE_POSE = False
 # eg. when comparing candidate keypoints to state.P
 # value is a pixel radius
 EQUAL_KEYPOINT_THRESHOLD = 8.0
-
-# minimum 'distance' between matches for them to be equal
-MATCH_DISTANCE_THRESHOLD = 300
 
 # threshold for angle between camera poses to add candidate to landmark set
 TRIANGULATION_ANGLE_THRESHOLD = 0.1  # [deg]
