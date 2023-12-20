@@ -130,13 +130,14 @@ def estimating_current_pose(
         for num_outlier, outliers in zip(range(number_of_outliers), outliers_index):
             outlier_keypoints[num_outlier, :, :] = keypoints[outliers, :, :]
 
-        print(
-            "ESTIMATE POSE: The RANSAC algorithm was succesful. Number of inliers found: "
-            + str(number_of_inliers)
-            + " ,out of: "
-            + str(number_of_points)
-            + "."
-        )
+        if params.PRINT_STATS:
+            print(
+                "ESTIMATE POSE: The RANSAC algorithm was succesful. Number of inliers found: "
+                + str(number_of_inliers)
+                + " ,out of: "
+                + str(number_of_points)
+                + "."
+            )
     else:
         print("ESTIMATE POSE: The RANSAC algorithm did not converged.")
 
@@ -146,7 +147,8 @@ def estimating_current_pose(
 
     # Refine the translation and rotation with the determined inliers.
     if refine_with_DLT == True:
-        print("ESTIMATE POSE: Refine the solution with the DLT algorithm.")
+        if params.PRINT_STATS:
+            print("ESTIMATE POSE: Refine the solution with the DLT algorithm.")
 
         # TODO: use useExtrinsicGuess with the RANSAC rotation and
         succes_DLT, rotation_vector_DLT, translation_vector_DLT = cv2.solvePnP(
@@ -190,7 +192,8 @@ def estimating_current_pose(
     # filter world points to remove points that are behind either camera
     mask: np.ndarray = P_C[2, :] > 0
 
-    print(f"ESTIMATE POSE: {sum(~mask)} points filtered from behind camera.")
+    if params.PRINT_STATS:
+        print(f"ESTIMATE POSE: {sum(~mask)} points filtered from behind camera.")
     P_new = P_old[:, mask]
     X_new = X_old[0:3, mask]
 

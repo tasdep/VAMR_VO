@@ -16,7 +16,10 @@ START_IMG_IDX = 0
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'
 # to visualise use cmd line tool snakeviz "snakeviz *.stats"
-DO_PROFILING = True
+DO_PROFILING = False
+
+# Whether to run printlines during execution.
+PRINT_STATS = False
 
 # wait for arrow key to advance to next frame, if false then just go straight to the next frame
 WAIT_ARROW = False
@@ -28,7 +31,7 @@ GLOBAL_POINT_CLOUD = False
 
 # limit the number of frames
 LIMIT_FRAME_COUNT = True
-FRAME_LIMIT = 20
+FRAME_LIMIT = 1000
 
 ################################################################
 # Params for 3 - Initialization #

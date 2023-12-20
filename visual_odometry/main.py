@@ -265,11 +265,10 @@ def main_loop():
             images, K, visualise=False, print_stats=True
         )
 
-
     ###############################
     # Setup visualiser  #
     ###############################
-    
+
     if not params.DO_PROFILING:
         # Initialize visualization
         # Create a figure and subplots outside the function
@@ -281,6 +280,7 @@ def main_loop():
         ax3 = fig.add_subplot(gs[1, 1])
         # Set a consistent orientation
         ax2.view_init(elev=-70, azim=-90)
+
         # setup plot event
         def on_key(event):
             if event.key == "right" and params.WAIT_ARROW:
@@ -296,7 +296,6 @@ def main_loop():
     ###############################
     # Continuous Visual Odometry  #
     ###############################
-            
 
     current_state: State = initial_state
     prev_image: np.ndarray = None
@@ -311,7 +310,8 @@ def main_loop():
     for idx, filename, new_image, color_image in generator:
         if params.LIMIT_FRAME_COUNT and idx > params.FRAME_LIMIT:
             break
-        print(f"MAIN LOOP: Analyzing image {idx}")
+        if params.PRINT_STATS:
+            print(f"MAIN LOOP: Analyzing image {idx}")
         if prev_image is None:
             prev_image = new_image
             continue
@@ -334,7 +334,12 @@ def main_loop():
         camera_pose_history[:, idx] = t_W.squeeze()
         num_landmarks = current_state.P.shape[1]
         current_state = update_landmarks(
-            current_state, prev_image, new_image, curr_pose, K, print_stats=True
+            current_state,
+            prev_image,
+            new_image,
+            curr_pose,
+            K,
+            print_stats=params.PRINT_STATS,
         )
         added_landmarks = current_state.P.shape[1] - num_landmarks
         if not params.DO_PROFILING:
