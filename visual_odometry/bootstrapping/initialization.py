@@ -41,8 +41,12 @@ def initialize_pipeline(
         # TODO try KLT instead of descriptor matching
 
         # calculate patch descriptors
-        descriptors_1: np.ndarray = patch_describe_keypoints(img_1, keypoints_1, params.DESC_PATCH_RAD)
-        descriptors_2: np.ndarray = patch_describe_keypoints(img_2, keypoints_2, params.DESC_PATCH_RAD)
+        descriptors_1: np.ndarray = patch_describe_keypoints(
+            img_1, keypoints_1, params.DESC_PATCH_RAD
+        )
+        descriptors_2: np.ndarray = patch_describe_keypoints(
+            img_2, keypoints_2, params.DESC_PATCH_RAD
+        )
 
         # TODO try ratio test instead of crossCheck
 
@@ -58,8 +62,12 @@ def initialize_pipeline(
             print(f"{len(matches)=}")
 
         # Create keypoint objects from numpy arrays
-        keypoints1_lst: list[cv2.KeyPoint] = [cv2.KeyPoint(float(x), float(y), 1) for x, y in keypoints_1]
-        keypoints2_lst: list[cv2.KeyPoint] = [cv2.KeyPoint(float(x), float(y), 1) for x, y in keypoints_2]
+        keypoints1_lst: list[cv2.KeyPoint] = [
+            cv2.KeyPoint(float(x), float(y), 1) for x, y in keypoints_1
+        ]
+        keypoints2_lst: list[cv2.KeyPoint] = [
+            cv2.KeyPoint(float(x), float(y), 1) for x, y in keypoints_2
+        ]
 
         if visualise:
             img3 = cv2.drawMatches(
@@ -75,8 +83,12 @@ def initialize_pipeline(
             plt.show()
 
         # get matched keypoints to estimate fundamental matrix
-        matched_pts_1 = np.float32([keypoints_1[m.queryIdx] for m in matches]).reshape(-1, 2)
-        matched_pts_2 = np.float32([keypoints_2[m.trainIdx] for m in matches]).reshape(-1, 2)
+        matched_pts_1 = np.float32([keypoints_1[m.queryIdx] for m in matches]).reshape(
+            -1, 2
+        )
+        matched_pts_2 = np.float32([keypoints_2[m.trainIdx] for m in matches]).reshape(
+            -1, 2
+        )
     else:
         # load in the matched points
         matched_pts_1 = np.float32(prematached_keypoints[0])
@@ -138,19 +150,39 @@ def initialize_pipeline(
         R2[:, 0] *= -1
 
     # find correct combination out of the 4 possible options
-    R_correct, t_correct = disambiguateRelativePose([R1, R2], t, inlier_pts_1, inlier_pts_2, K)
+    R_correct, t_correct = disambiguateRelativePose(
+        [R1, R2], t, inlier_pts_1, inlier_pts_2, K
+    )
     T: np.ndarray = create_homogeneous_matrix(R_correct, t_correct)
     # 3D
-    X, mask = triangulate_points_wrapper(np.eye(4), T, K, inlier_pts_1.T, inlier_pts_2.T)
+    X, mask = triangulate_points_wrapper(
+        np.eye(4), T, K, inlier_pts_1.T, inlier_pts_2.T
+    )
     if X[2, :].min() < 0:
-        n = (X[2,:]<0).sum()
+        n = (X[2, :] < 0).sum()
         print(f"{n} points triangulated behind camera during initialisation")
+    X = X[:, mask]
     # 2D
-    P: np.ndarray = inlier_pts_2.T[:, mask]
+    P: np.ndarray = inlier_pts_1.T[:, mask]
 
     # Visualisation
     if visualise:
-        visualise_pose_and_landmarks(R_correct, t_correct, img_1, img_2, X, inlier_pts_1, inlier_pts_2)
+        visualise_pose_and_landmarks(
+            R_correct, t_correct, img_1, img_2, X, inlier_pts_1, inlier_pts_2
+        )
+
+    # Remove major outliers
+    means = np.mean(X, axis=1)
+    stds = np.std(X, axis=1)
+    for point_3D in X.T:
+        z_score = np.average(np.abs((point_3D.T - means) / stds))
+        if z_score > params.OUTLIER_3D_REJECTION_SIGMA:
+            if print_stats:
+                print(
+                    f"INITIALIZATION: rejecting triangulated new keypoint \n"
+                    f"{point_3D} \nbecause it is an outlier from the rest of state.X"
+                )
+            continue
 
     # initialise the pipeline object with the keypoints and landmarks
     # note: C,F,T are blank as there are no candidates at this point
@@ -242,7 +274,9 @@ def visualise_pose_and_landmarks(
     center_cam2_W = -R.T @ t
     center_cam2_W = center_cam2_W.reshape(-1)
     drawCamera(ax, center_cam2_W, R.T, length_scale=10)
-    ax.text(center_cam2_W[0] - 0.1, center_cam2_W[1] - 0.1, center_cam2_W[2] - 0.1, "Cam 2")
+    ax.text(
+        center_cam2_W[0] - 0.1, center_cam2_W[1] - 0.1, center_cam2_W[2] - 0.1, "Cam 2"
+    )
 
     # ax.set_xlim([-5, 50])
     # ax.set_ylim([-5, 50])

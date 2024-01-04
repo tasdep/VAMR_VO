@@ -43,7 +43,9 @@ def estimating_current_pose(
 
     # Check if the provided method is valid
     if PnP_solver not in valid_methods:
-        raise ValueError(f"Invalid method. Please choose from: {', '.join(valid_methods)}")
+        raise ValueError(
+            f"Invalid method. Please choose from: {', '.join(valid_methods)}"
+        )
 
     # Initialize the rotation and translation
     R = np.zeros((3, 3))  # dim 3x3
@@ -83,7 +85,9 @@ def estimating_current_pose(
     elif PnP_solver == "DLT":
         PnP_flag = cv2.SOLVEPNP_ITERATIVE
     else:
-        raise ValueError(f"Invalid method. Please choose from: {', '.join(valid_methods)}")
+        raise ValueError(
+            f"Invalid method. Please choose from: {', '.join(valid_methods)}"
+        )
 
     # cv2.SOLVEPNP_P3P or cv2.SOLVEPNP_ITERATIVE
     succes, rotation_vector, translation_vector, inliers_index = cv2.solvePnPRansac(
@@ -97,8 +101,12 @@ def estimating_current_pose(
         number_of_inliers = len(inliers_index)
 
         # Find the inliers in the keypoints and the landmarks
-        inlier_landmarks = np.zeros((number_of_inliers, landmarks.shape[1], landmarks.shape[2]))  # dim: num_of_inliers x1x3
-        inlier_keypoints = np.zeros((number_of_inliers, keypoints.shape[1], keypoints.shape[2]))  # dim: num_of_inliers x1x2
+        inlier_landmarks = np.zeros(
+            (number_of_inliers, landmarks.shape[1], landmarks.shape[2])
+        )  # dim: num_of_inliers x1x3
+        inlier_keypoints = np.zeros(
+            (number_of_inliers, keypoints.shape[1], keypoints.shape[2])
+        )  # dim: num_of_inliers x1x2
 
         # Get out the inliers:
         for num_inlier, inliers in zip(range(number_of_inliers), inliers_index):
@@ -120,13 +128,14 @@ def estimating_current_pose(
         for num_outlier, outliers in zip(range(number_of_outliers), outliers_index):
             outlier_keypoints[num_outlier, :, :] = keypoints[outliers, :, :]
 
-        print(
-            "ESTIMATE POSE: The RANSAC algorithm was succesful. Number of inliers found: "
-            + str(number_of_inliers)
-            + " ,out of: "
-            + str(number_of_points)
-            + "."
-        )
+        if params.PRINT_STATS:
+            print(
+                "ESTIMATE POSE: The RANSAC algorithm was succesful. Number of inliers found: "
+                + str(number_of_inliers)
+                + " ,out of: "
+                + str(number_of_points)
+                + "."
+            )
     else:
         print("ESTIMATE POSE: The RANSAC algorithm did not converged.")
 
@@ -136,7 +145,8 @@ def estimating_current_pose(
 
     # Refine the translation and rotation with the determined inliers.
     if refine_with_DLT == True:
-        print("ESTIMATE POSE: Refine the solution with the DLT algorithm.")
+        if params.PRINT_STATS:
+            print("ESTIMATE POSE: Refine the solution with the DLT algorithm.")
 
         # TODO: use useExtrinsicGuess with the RANSAC rotation and
         succes_DLT, rotation_vector_DLT, translation_vector_DLT = cv2.solvePnP(
@@ -149,7 +159,9 @@ def estimating_current_pose(
             t = translation_vector_DLT  # dim: 3x1
 
         else:
-            print("ESTIMATE POSE: The DLT refinement did not work. Use the original solution.")
+            print(
+                "ESTIMATE POSE: The DLT refinement did not work. Use the original solution."
+            )
             # Convert the rotation vector to a matrix
             R = cv2.Rodrigues(rotation_vector)[0]  # dim: 3x3
             t = translation_vector  # dim: 3x1
@@ -161,7 +173,9 @@ def estimating_current_pose(
 
     # Visualize the results
     if visualization == True:
-        visualize_pose(figure, image, R, t, landmarks, inlier_keypoints.T, outlier_keypoints.T)
+        visualize_pose(
+            figure, image, R, t, landmarks, inlier_keypoints.T, outlier_keypoints.T
+        )
 
     # update state to remove landmarks from behind the camera
     P_old = state.P
@@ -176,7 +190,8 @@ def estimating_current_pose(
     # filter world points to remove points that are behind either camera
     mask: np.ndarray = P_C[2, :] > 0
 
-    # print(f"{num_points_behind_camera} points filtered from behind camera.")
+    if params.PRINT_STATS:
+        print(f"ESTIMATE POSE: {sum(~mask)} points filtered from behind camera.")
     P_new = P_old[:, mask]
     X_new = X_old[0:3, mask]
 
@@ -249,10 +264,14 @@ def visualize_pose(
     ax2.set_zlim3d(-60, 50)
     ax2.set_title("3D view")
 
-    #drawCamera(ax2, camera_position, R, length_scale=10, head_size=10, equal_axis=True, set_ax_limits=True)
-    cam_length = 10
-    for i in range(3):
-        direction = R[:, i]
-        ax2.quiver(*t.ravel(), *direction, length=cam_length, color=["r", "g", "b"][i])
+    drawCamera(
+        ax2,
+        camera_position,
+        R,
+        length_scale=10,
+        head_size=10,
+        equal_axis=True,
+        set_ax_limits=True,
+    )
 
     plt.pause(1)

@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 from pathlib import Path
 import os
 import cProfile
@@ -15,87 +16,8 @@ from continuous_vo.estimating_current_pose import estimating_current_pose
 from continuous_vo.update_landmarks import update_landmarks
 
 from utils.state import State
-from utils.utils import create_homogeneous_matrix, get_camera_pos_in_world
-from utils.visualisation import drawCamera
-
-
-# RED = Candidates
-# GREEN = Landmarks
-def update_visualization(fig, ax1, ax2, ax3, current_image, state, R, t, camera_pose_history, idx):
-    # Update Plot 1: Current image with keypoints
-    ax1.clear()
-    ax1.set_title("Current Image with Keypoints in Frame: " + str(idx))
-    img_with_keypoints = current_image
-    for p in state.P.T:
-        p = p.astype(int)
-        cv2.circle(
-            img_with_keypoints,
-            (p[0], p[1]),
-            radius=3,
-            color=(0, 255, 0),
-            thickness=-1,
-        )
-    if state.C is not None:
-        for c in state.C.T:
-            c = c.astype(int)
-            cv2.circle(
-                img_with_keypoints,
-                (c[0], c[1]),
-                radius=3,
-                color=(255, 0, 0),
-                thickness=-1,
-            )
-    ax1.imshow(img_with_keypoints)
-
-    # Update Plot 2: 3D Point Cloud with Camera Pose
-    ax2.clear()
-    ax2.set_title("3D Point Cloud with Camera Pose")
-    ax2.set_xlabel("X axis")
-    ax2.set_ylabel("Y axis")
-    ax2.set_zlabel("Z axis")
-    ax2.scatter(state.X[0, :], state.X[1, :], state.X[2, :])
-    # drawCamera(
-    #     ax2,
-    #     (-R.T @ t).ravel(),
-    #     R.T,
-    #     length_scale=5,
-    #     head_size=5,
-    #     equal_axis=False,
-    #     set_ax_limits=False,
-    # )
-    cam_length = 2
-    for i in range(3):
-        direction = R.T[:, i]
-        ax2.quiver(*t.ravel(), *direction, length=cam_length, color=["r", "g", "b"][i])
-    ax2.axis("auto")
-
-    # Set fixed limits for the axes
-    # You need to mess with this depending on the dataset.
-    # ax2.set_xlim([-100, 100])
-    # ax2.set_ylim([-100, 100])
-    # ax2.set_zlim([-100, 100])
-
-
-
-    # Add a marker for the origin
-    ax2.scatter([0], [0], [0], color="k", marker="o")  # Black dot at the origin
-
-    # Update Plot 3: 2D Camera Pose History
-    ax3.clear()
-    ax3.set_title("2D Top-Down Camera Pose History")
-    ax3.set_xlabel("X axis")
-    ax3.set_ylabel("Z axis")
-    ax3.plot(camera_pose_history[0, :], camera_pose_history[2, :])
-    ax3.scatter(camera_pose_history[0, :], camera_pose_history[2, :], s=5, c='r', marker='o' )
-    ax3.set_aspect("equal")
-    ax3.autoscale(enable=True, axis="both")
-
-    plt.draw()
-    plt.pause(0.001)  # Necessary for the plot to update
-    if params.WAIT_ARROW:
-        fig.canvas.start_event_loop(timeout=-1)
-    else:
-        plt.waitforbuttonpress()  # Wait for keyboard input
+from utils.utils import create_homogeneous_matrix
+from utils.visualisation import update_visualization
 
 
 def image_generator(folder_path):
@@ -112,13 +34,15 @@ def image_generator(folder_path):
     for filename in sorted(os.listdir(folder_path)):
         if filename.endswith((".jpg", ".jpeg", ".png", ".gif")):
             idx += 1
+            if idx < params.START_IMG_IDX:
+                continue
             image_path = os.path.join(folder_path, filename)
             image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
             color_image = cv2.imread(image_path, cv2.IMREAD_COLOR)
             yield idx, filename, image, color_image
 
 
-if __name__ == "__main__":
+def main_loop():
     ###############################
     # Load data                   #
     ###############################
@@ -132,6 +56,14 @@ if __name__ == "__main__":
             )  # calibration matrix[3x3]
             pass
         case params.Dataset.DATASET2:
+            folder_path = (base_path / "../local_data/kitti/05/image_0").resolve()
+            calib_path = (base_path / "../local_data/kitti/05/calib.txt").resolve()
+            all_calib: np.ndarray = np.genfromtxt(
+                calib_path, delimiter=" ", dtype=float
+            )
+            K: np.ndarray = all_calib[0, 1:].reshape([3, 4])[
+                :, :-1
+            ]  # calibration matrix[3x3]
             pass
         case params.Dataset.DATASET3:
             pass
@@ -147,7 +79,9 @@ if __name__ == "__main__":
     ###############################
     if params.SKIP_BOOTSTRAP:
         if params.DATASET != params.Dataset.DATASET4:
-            print("Error: Must use Dataset 4 (local_data from ransac ex) for skipping initialization")
+            print(
+                "Error: Must use Dataset 4 (local_data from ransac ex) for skipping initialization"
+            )
             os._exit()
         keypoints = np.loadtxt(
             (base_path / "local_data/test_data/keypoints.txt").resolve()
@@ -168,16 +102,15 @@ if __name__ == "__main__":
 
         initial_state: State
         initial_pose: np.ndarray
-        initial_state, initial_pose = initialize_pipeline(images, K, visualise=False, print_stats=True)
+        initial_state, initial_pose = initialize_pipeline(
+            images, K, visualise=False, print_stats=True
+        )
 
     ###############################
-    # Continuous Visual Odometry  #
+    # Setup visualiser  #
     ###############################
 
-    if params.DO_PROFILING:
-        profiler = cProfile.Profile()
-        profiler.enable()
-    else:
+    if not params.DO_PROFILING:
         # Initialize visualization
         # Create a figure and subplots outside the function
         plt.ion()  # Turn on interactive mode
@@ -188,35 +121,41 @@ if __name__ == "__main__":
         ax3 = fig.add_subplot(gs[1, 1])
         # Set a consistent orientation
         ax2.view_init(elev=-70, azim=-90)
-        # setup plot event
-        if params.WAIT_ARROW:
 
-            def on_key(event):
-                if event.key == "right":
-                    print("Right arrow key pressed.")
-                    fig.canvas.stop_event_loop()
-                elif event.key == "escape":
-                    print("Esc key pressed.")
-                    plt.close("all")
-                    exit(0)
+        # setup plot event
+        def on_key(event):
+            if event.key == "right" and params.WAIT_ARROW:
+                print("Right arrow key pressed.")
+                fig.canvas.stop_event_loop()
+            elif event.key == "escape":
+                print("Esc key pressed.")
+                plt.close("all")
+                exit(0)
 
             plt.connect("key_press_event", on_key)
 
+    ###############################
+    # Continuous Visual Odometry  #
+    ###############################
+
     current_state: State = initial_state
     prev_image: np.ndarray = None
-    camera_poses_history: list[np.ndarray] = []
     generator = image_generator(folder_path)
 
     camera_pose_history = np.zeros((3, len(os.listdir(folder_path))))
+    global_point_cloud: set[tuple[float, float, float]] = set()
     prev_image = None
+    R = None
+    t = None
     for idx, filename, new_image, color_image in generator:
         if params.LIMIT_FRAME_COUNT and idx > params.FRAME_LIMIT:
             break
-        print(f"MAIN LOOP: Analyzing image {idx}")
+        if params.PRINT_STATS:
+            print(f"MAIN LOOP: Analyzing image {idx}")
         if prev_image is None:
             prev_image = new_image
             continue
-        track_and_update(
+        previous_keypoint_locations, current_locations = track_and_update(
             current_state,
             prev_image,
             new_image,
@@ -224,14 +163,30 @@ if __name__ == "__main__":
             visualizer_img=color_image,
         )
         # fig_cp, ax_cp = plt.subplots()
-        # figure=fig_cp, image=color_image
-        R, t = estimating_current_pose(current_state, K, PnP_solver='P3P', refine_with_DLT=False, visualization=False)
+        # figure = fig_cp
+        # image = color_image
+        R, t = estimating_current_pose(
+            current_state, K, visualization=False, refine_with_DLT=params.REFINE_POSE
+        )
         curr_pose: np.ndarray = create_homogeneous_matrix(R, t).flatten()
         # convert t to world frame for plotting
         t_W = -R.T @ t
         camera_pose_history[:, idx] = t_W.squeeze()
-        current_state = update_landmarks(current_state, prev_image, new_image, curr_pose, K, print_stats=True)
+        num_landmarks = current_state.P.shape[1]
+        current_state = update_landmarks(
+            current_state,
+            prev_image,
+            new_image,
+            curr_pose,
+            K,
+            print_stats=params.PRINT_STATS,
+        )
+        added_landmarks = current_state.P.shape[1] - num_landmarks
         if not params.DO_PROFILING:
+            # Update the global point cloud
+            if params.GLOBAL_POINT_CLOUD:
+                for point in current_state.X.T:
+                    global_point_cloud.add((point[0], point[1], point[2]))
             update_visualization(
                 fig,
                 ax1,
@@ -239,12 +194,25 @@ if __name__ == "__main__":
                 ax3,
                 color_image,
                 current_state,
+                previous_keypoint_locations,
+                current_locations,
+                global_point_cloud,
                 R,
                 t,
-                camera_pose_history[:, :idx],
-                idx
+                camera_pose_history[:, : min(camera_pose_history.shape[1], idx + 1)],
+                added_landmarks,
+                idx,
             )
+
         prev_image = new_image
+
+
+if __name__ == "__main__":
+    if params.DO_PROFILING:
+        profiler = cProfile.Profile()
+        profiler.enable()
+
+    main_loop()
 
     if params.DO_PROFILING:
         profiler.disable()

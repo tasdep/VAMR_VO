@@ -9,20 +9,29 @@ class Dataset(Enum):
     DATASET4 = "Ransac exercise"
 
 
-DATASET = Dataset.DATASET4
+DATASET = Dataset.DATASET1
+# Which image to begin on in the dataset
+START_IMG_IDX = 0
 
 # turning on profiling disables the visualiser
 # output is a file 'full_run.stats'
 # to visualise use cmd line tool snakeviz "snakeviz *.stats"
 DO_PROFILING = False
 
-# wait for arrow key to advance to next frame
+# Whether to run printlines during execution.
+PRINT_STATS = False
+
+# wait for arrow key to advance to next frame, if false then just go straight to the next frame
 WAIT_ARROW = False
+
+# Whether to visualize the global point cloud or just the
+# actively tracked point cloud.
+GLOBAL_POINT_CLOUD = False
 
 
 # limit the number of frames
 LIMIT_FRAME_COUNT = True
-FRAME_LIMIT = 100
+FRAME_LIMIT = 1000
 
 ################################################################
 # Params for 3 - Initialization #
@@ -36,18 +45,20 @@ SKIP_BOOTSTRAP = False
 # Which frames from the input to use for bootstrapping initial features.
 BOOTSRAP_FRAMES = [0, 3]
 
-HARRIS_BLOCK_SIZE = 9
-HARRIS_SOBEL_SIZE = 3
-# Magic number in harris algo
-HARRIS_K = 0.1
+HARRIS_BLOCK_SIZE = 3
+HARRIS_MAX_CORNERS = 1000
+HARRIS_MIN_DISTANCE = 10.0
+HARRIS_QUALITY_LEVEL = 0.01
 
 # after harris corner detector to threshold which points are corners
-KEYPOINT_THRESHOLD = 0.1
+KEYPOINT_THRESHOLD = 0.2
 
 DESC_PATCH_RAD = 3
 
 RANSAC_REPROJ_THRESH = 0.5
 RANSAC_CONFIDENCE = 0.999
+
+OUTLIER_3D_REJECTION_SIGMA = 3.0
 
 
 ################################################################
@@ -60,9 +71,11 @@ KLT_MAX_LEVEL = 2
 # after a set number of iterations. Oring them results in termination after whichever criteria is met first.
 KLT_CRITERIA = (
     cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT,  # Criteria types: EPS or COUNT
-    10,  # Maximum number of iterations the algorithm will take
+    20,  # Maximum number of iterations the algorithm will take
     0.003,  # Epsilon value for convergence
 )
+
+TRACKING_OUTLIER_REJECTION_SIGMA = 2.0
 
 # Params for 4.2 - RANSAC localization for pose estimation #
 ################################################################
@@ -75,7 +88,9 @@ POSE_RANSAC_ITERATION = 2000
 POSE_RANSAC_REPROJECTION_ERROR = 10.0
 
 # The probability that the algorithm produces a useful result. Default: 0.99
-POSE_RANSAC_CONFIDENCE = 0.9
+POSE_RANSAC_CONFIDENCE = 0.999
+
+REFINE_POSE = False
 
 ################################################################
 # Params for 4.3 - Associating keypoints to exisitng landmarks #
@@ -83,13 +98,12 @@ POSE_RANSAC_CONFIDENCE = 0.9
 # threshold to determine whether a newly detected keypoint is the same as a currently tracked one
 # eg. when comparing candidate keypoints to state.P
 # value is a pixel radius
-EQUAL_KEYPOINT_THRESHOLD = 2.1
-
-# minimum 'distance' between matches for them to be equal
-MATCH_DISTANCE_THRESHOLD = 300
+EQUAL_KEYPOINT_THRESHOLD = 8.0
 
 # threshold for angle between camera poses to add candidate to landmark set
-TRIANGULATION_ANGLE_THRESHOLD = 10  # [deg]
+TRIANGULATION_ANGLE_THRESHOLD = 6.5 # [deg]
 
 # number of landmarks to maintain
-NUM_LANDMARKS_GOAL = 400
+NUM_LANDMARKS_GOAL = 500
+
+LIMIT_NEW_LANDMARKS = 100
