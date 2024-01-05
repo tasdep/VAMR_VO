@@ -114,4 +114,4 @@ LIMIT_NEW_LANDMARKS = 100
 
 # Whether to limit the number of new candidates in each 10x10 grid cell
 # in the image (is a bit slower but runs better with sparser images in Malaga)
-DISTRIBUTE_KEYPOINTS = True
+DISTRIBUTE_KEYPOINTS = False
