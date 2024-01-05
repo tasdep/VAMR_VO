@@ -239,12 +239,13 @@ def update_visualization(
     )
 
     # Add a marker for the origin
-    ax2.scatter([0], [0], [0], color="k", marker="o")  # Black dot at the origin
+    # ax2.scatter([0], [0], [0], color="k", marker="o")  # Black dot at the origin
 
+    start_idx = -50 if params.ONLY_RECENT_FRAMES_3D else 0
     ax2.plot(
-        camera_pose_history[0, :],
-        camera_pose_history[1, :],
-        camera_pose_history[2, :],
+        camera_pose_history[0, start_idx:-1],
+        camera_pose_history[1, start_idx:-1],
+        camera_pose_history[2, start_idx:-1],
         color="red",
     )  # Line plot
 

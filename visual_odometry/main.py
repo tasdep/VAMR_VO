@@ -33,6 +33,9 @@ def image_generator(folder_path):
     idx = -1
     for filename in sorted(os.listdir(folder_path)):
         if filename.endswith((".jpg", ".jpeg", ".png", ".gif")):
+            if filename.endswith(("_right.jpg")):
+                # Skip right camera in Malaga
+                continue
             idx += 1
             if idx < params.START_IMG_IDX:
                 continue
@@ -66,6 +69,32 @@ def main_loop():
             ]  # calibration matrix[3x3]
             pass
         case params.Dataset.DATASET3:
+            folder_path = (
+                base_path
+                / "../local_data/malaga/malaga-urban-dataset-extract-07_rectified_800x600_Images"
+            ).resolve()
+            calib_path = (
+                base_path
+                / "../local_data/malaga/camera_params_rectified_a=0_800x600.txt"
+            ).resolve()
+            fx = fy = cx = cy = None
+            # Open the file and read line by line
+            with open(calib_path, "r") as file:
+                for line in file:
+                    # NOTE: This only works for the left camera as its
+                    # calib data is first in the file.
+                    if "fx=" in line and fx is None:
+                        fx = float(line.split("=")[1])
+                    elif "fy=" in line and fy is None:
+                        fy = float(line.split("=")[1])
+                    elif "cx=" in line and cx is None:
+                        cx = float(line.split("=")[1])
+                    elif "cy=" in line and cy is None:
+                        cy = float(line.split("=")[1])
+
+            # Assuming all values were found, create the calibration matrix
+            if None not in [fx, fy, cx, cy]:
+                K: np.ndarray = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1]])
             pass
         case params.Dataset.DATASET4:
             folder_path = (base_path / "../local_data/test_data").resolve()
