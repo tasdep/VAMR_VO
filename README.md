@@ -14,7 +14,9 @@ To get a local copy up and running follow these steps.
 
 ### Running
 1) Navigate to the VAMR_VO directory
-2) Run `python visual_odometry/main.py`
+2) Choose the dataset in `params/params.py`. If not using the shared dataset, make sure you have the chosen dataset in your `local_data` folder.
+3) Set params for dataset. In particular, set `DISTRIBUTE_KEYPOINTS = True` for Malaga, and `DISTRIBUTE_KEYPOINTS = False` for Kitti to speed it up.
+4) Run `python visual_odometry/main.py`
 
 ## Links
 - [Subject website](https://rpg.ifi.uzh.ch/teaching.html)
