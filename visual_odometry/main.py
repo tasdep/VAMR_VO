@@ -133,7 +133,7 @@ def main_loop():
         initial_state: State
         initial_pose: np.ndarray
         initial_state, initial_pose = initialize_pipeline(
-            images, K, visualise=False, print_stats=True
+            images, K, visualise=False, print_stats=params.PRINT_STATS
         )
 
     ###############################

@@ -160,7 +160,8 @@ def initialize_pipeline(
     )
     if X[2, :].min() < 0:
         n = (X[2, :] < 0).sum()
-        print(f"{n} points triangulated behind camera during initialisation")
+        if print_stats:
+            print(f"{n} points triangulated behind camera during initialisation")
     X = X[:, mask]
     # 2D
     P: np.ndarray = inlier_pts_1.T[:, mask]
