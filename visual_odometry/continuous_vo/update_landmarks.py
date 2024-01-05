@@ -57,7 +57,7 @@ def distribute_keypoints(image, keypoints, grid_size=(10, 10), keypoints_per_cel
     cell_width = w // grid_size[1]
 
     # Initialize a list to hold keypoints for each cell
-    distributed_keypoints = [[] for _ in range(grid_size[0] * grid_size[1])]
+    distributed_keypoints = [[] for _ in range(grid_size[0] * grid_size[1] + 1)]
 
     # Assign keypoints to the appropriate cell
     for keypoint in keypoints:
