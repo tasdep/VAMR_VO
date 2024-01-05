@@ -46,7 +46,7 @@ ONLY_RECENT_FRAMES_3D = True
 SKIP_BOOTSTRAP = False
 
 # Which frames from the input to use for bootstrapping initial features.
-BOOTSRAP_FRAMES = [0, 3]
+BOOTSRAP_FRAMES = [0, 7]
 
 HARRIS_BLOCK_SIZE = 3
 HARRIS_MAX_CORNERS = 1000
@@ -88,7 +88,7 @@ POSE_RANSAC_ITERATION = 2000
 
 # Inlier threshold value used by the RANSAC procedure.
 # The parameter value is the maximum allowed distance between the observed and computed point projections to consider it an inlier. Default: 8.0
-POSE_RANSAC_REPROJECTION_ERROR = 10.0
+POSE_RANSAC_REPROJECTION_ERROR = 12.0
 
 # The probability that the algorithm produces a useful result. Default: 0.99
 POSE_RANSAC_CONFIDENCE = 0.999
@@ -104,14 +104,14 @@ REFINE_POSE = False
 EQUAL_KEYPOINT_THRESHOLD = 8.0
 
 # threshold for angle between camera poses to add candidate to landmark set
-TRIANGULATION_ANGLE_THRESHOLD = 6.5 # [deg]
+TRIANGULATION_ANGLE_THRESHOLD = 12 # [deg]
 
 # number of landmarks to maintain
-NUM_LANDMARKS_GOAL = 500
+NUM_LANDMARKS_GOAL = 700
 
 # Max number of new landmarks to add each frame
-LIMIT_NEW_LANDMARKS = 100
+LIMIT_NEW_LANDMARKS = 150
 
 # Whether to limit the number of new candidates in each 10x10 grid cell
 # in the image (is a bit slower but runs better with sparser images in Malaga)
-DISTRIBUTE_KEYPOINTS = False
+DISTRIBUTE_KEYPOINTS = True
