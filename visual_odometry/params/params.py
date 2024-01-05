@@ -30,8 +30,11 @@ GLOBAL_POINT_CLOUD = False
 
 
 # limit the number of frames
-LIMIT_FRAME_COUNT = True
+LIMIT_FRAME_COUNT = False
 FRAME_LIMIT = 1000
+
+# Only show the last 20 frames of the path in 3D
+ONLY_RECENT_FRAMES_3D = True
 
 ################################################################
 # Params for 3 - Initialization #
@@ -93,7 +96,7 @@ POSE_RANSAC_CONFIDENCE = 0.999
 REFINE_POSE = False
 
 ################################################################
-# Params for 4.3 - Associating keypoints to exisitng landmarks #
+# Params for 4.3 - Updating landmarks #
 ################################################################
 # threshold to determine whether a newly detected keypoint is the same as a currently tracked one
 # eg. when comparing candidate keypoints to state.P
@@ -106,4 +109,9 @@ TRIANGULATION_ANGLE_THRESHOLD = 6.5 # [deg]
 # number of landmarks to maintain
 NUM_LANDMARKS_GOAL = 500
 
+# Max number of new landmarks to add each frame
 LIMIT_NEW_LANDMARKS = 100
+
+# Whether to limit the number of new candidates in each 10x10 grid cell
+# in the image (is a bit slower but runs better with sparser images in Malaga)
+DISTRIBUTE_KEYPOINTS = False
