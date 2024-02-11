@@ -1,6 +1,9 @@
 ## About The Project
 Our VAMR VO pipeline project :)
 
+## Project report
+[Link to project report PDF](VAMR_VO.pdf)
+
 ## Getting Started
 To get a local copy up and running follow these steps.
 
@@ -21,8 +24,6 @@ To get a local copy up and running follow these steps.
 ## Links
 - [Subject website](https://rpg.ifi.uzh.ch/teaching.html)
 - [Project FAQ website](https://docs.google.com/document/d/1IuWmXyO1m5DV77AhEa-MpK-yp9LDMQO5IM6oyVLvHa0/edit#heading=h.w8vo6xo5cuee)
-- [Overleaf draft report](https://www.overleaf.com/1966191675jhdpcgnggbfs#a129d1)
-- [4.3 Pseudocode](https://docs.google.com/document/d/1G66pdkz_V2rK24olrELUtHSQnHHMSyiDgMahU2Wfno0/edit)
 
 ## Datasets
 The shared data folder contains the small/easy dataset. The other larger datasets should be stored locally in a top level folder `local_data/`. This is in the `.gitignore`.
